@@ -47,15 +47,15 @@ Open http://localhost:5173
 The sentiment analysis can be run locally using a Python server.
 
 1.  **Install Python dependencies:**
-    Navigate to the `backend` directory and install the required packages.
+    Navigate to the `src/backend` directory and install the required packages.
 
     ```bash
-    cd backend
+    cd src/backend
     pip3 install -r requirements.txt
     ```
 
 2.  **Run the backend server:**
-    In the `backend` directory, start the Flask server.
+    In the `src/backend` directory, start the Flask server.
 
     ```bash
     python3 main.py
