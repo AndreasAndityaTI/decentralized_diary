@@ -34,7 +34,7 @@ VITE_SENTIMENT_AUTH=Bearer <your-hf-token>
 3. Run dev server:
 
 ```bash
-pnpm run dev
+npm run dev
 ```
 
 Open http://localhost:5173
