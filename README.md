@@ -26,9 +26,12 @@ A web-based diary for pedestrians that:
 VITE_IPFS_ENDPOINT=https://api.pinata.cloud/pinning/pinJSONToIPFS
 VITE_IPFS_AUTH=Bearer <pinata-jwt-or-your-auth>
 
+# Local Python/TensorFlow sentiment classification
+VITE_SENTIMENT_ENDPOINT=http://127.0.0.1:5000/sentiment
+
 # Example: Hugging Face text-classification pipeline
-VITE_SENTIMENT_ENDPOINT=https://api-inference.huggingface.co/models/cardiffnlp/twitter-roberta-base-sentiment
-VITE_SENTIMENT_AUTH=Bearer <your-hf-token>
+# VITE_SENTIMENT_ENDPOINT=https://api-inference.huggingface.co/models/cardiffnlp/twitter-roberta-base-sentiment
+# VITE_SENTIMENT_AUTH=Bearer <your-hf-token>
 ```
 
 3. Run dev server:
@@ -38,6 +41,27 @@ pnpm run dev
 ```
 
 Open http://localhost:5173
+
+## Running the Python AI Backend
+
+The sentiment analysis can be run locally using a Python server.
+
+1.  **Install Python dependencies:**
+    Navigate to the `backend` directory and install the required packages.
+
+    ```bash
+    cd backend
+    pip3 install -r requirements.txt
+    ```
+
+2.  **Run the backend server:**
+    In the `backend` directory, start the Flask server.
+
+    ```bash
+    python3 main.py
+    ```
+
+    The server will run on `http://127.0.0.1:5000`.
 
 ## How it works
 - **WalletConnect**: Enables a CIP-30 wallet and displays network info (expects testnet).
