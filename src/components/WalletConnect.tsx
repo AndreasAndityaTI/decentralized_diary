@@ -27,21 +27,24 @@ export default function WalletConnect(props: { onConnected: (api: WalletAPI, inf
   }
 
   return (
-    <div className="p-4 border rounded bg-white shadow-sm">
+    <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur shadow-[0_0_24px_-10px_rgba(99,102,241,0.45)]">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-semibold text-lg">Wallet</h3>
+          <h3 className="font-semibold text-lg text-slate-100">Wallet</h3>
           {info ? (
-            <p className="text-sm text-gray-600">Network: {info.networkId === 0 ? 'Testnet' : 'Mainnet'}</p>
+            <p className="text-sm text-slate-400">Network: {info.networkId === 0 ? 'Testnet' : 'Mainnet'}</p>
           ) : (
-            <p className="text-sm text-gray-600">Connect Cardano wallet (CIP-30)</p>
+            <p className="text-sm text-slate-400">Connect Cardano wallet (CIP-30)</p>
           )}
         </div>
-        <button onClick={connect} className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+        <button
+          onClick={connect}
+          className="px-3 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-fuchsia-600 text-white hover:from-indigo-500 hover:to-fuchsia-500 shadow-[0_0_20px_-8px_rgba(139,92,246,0.6)]"
+        >
           {api ? 'Reconnect' : 'Connect'}
         </button>
       </div>
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-2 text-sm text-rose-400">{error}</p>}
     </div>
   )
 }

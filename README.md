@@ -1,4 +1,4 @@
-# Cardano Pedestrian Diary (Preprod)
+# Cardano Decentralized Diary
 
 A web-based diary for pedestrians that:
 - **Decentralized account**: connects to Cardano CIP-30 wallets (Nami/Eternl/Lace)

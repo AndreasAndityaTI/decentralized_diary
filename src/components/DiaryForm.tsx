@@ -52,36 +52,48 @@ export default function DiaryForm(props: { onPublished: (entry: DiaryEntry, ipfs
   }
 
   return (
-    <div className="p-4 border rounded bg-white shadow-sm space-y-3">
-      <h3 className="font-semibold text-lg">New Diary Entry</h3>
+    <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur space-y-3 shadow-[0_0_24px_-10px_rgba(34,211,238,0.35)]">
+      <h3 className="font-semibold text-lg text-slate-100">New Diary Entry</h3>
       <input
-        className="w-full border rounded p-2"
+        className="w-full border border-slate-700/70 bg-slate-900 text-slate-100 placeholder-slate-500 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-cyan-400/60"
         placeholder="Title"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
       />
       <textarea
-        className="w-full border rounded p-2 min-h-[140px]"
+        className="w-full border border-slate-700/70 bg-slate-900 text-slate-100 placeholder-slate-500 rounded-lg p-2 min-h-[140px] focus:outline-none focus:ring-2 focus:ring-fuchsia-400/60"
         placeholder="Share your pedestrian journey..."
         value={content}
         onChange={(e) => setContent(e.target.value)}
       />
       <input
-        className="w-full border rounded p-2"
+        className="w-full border border-slate-700/70 bg-slate-900 text-slate-100 placeholder-slate-500 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-indigo-400/60"
         placeholder="Location (optional)"
         value={location}
         onChange={(e) => setLocation(e.target.value)}
       />
       <div className="flex items-center gap-2">
-        <button onClick={analyze} disabled={loading} className="px-3 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-50">Analyze Sentiment</button>
+        <button
+          onClick={analyze}
+          disabled={loading}
+          className="px-3 py-2 rounded-lg bg-gradient-to-r from-cyan-600 to-fuchsia-600 text-white hover:from-cyan-500 hover:to-fuchsia-500 disabled:opacity-50"
+        >
+          Analyze Sentiment
+        </button>
         {sentiment && (
-          <span className="text-sm text-gray-700">{sentiment.label} ({(sentiment.score * 100).toFixed(1)}%)</span>
+          <span className="text-sm text-slate-300">{sentiment.label} ({(sentiment.score * 100).toFixed(1)}%)</span>
         )}
       </div>
       <div className="flex justify-end">
-        <button onClick={publish} disabled={loading} className="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50">Publish to IPFS</button>
+        <button
+          onClick={publish}
+          disabled={loading}
+          className="px-3 py-2 rounded-lg bg-gradient-to-r from-emerald-600 to-cyan-600 text-white hover:from-emerald-500 hover:to-cyan-500 disabled:opacity-50"
+        >
+          Publish to IPFS
+        </button>
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-rose-400">{error}</p>}
     </div>
   )
 }
