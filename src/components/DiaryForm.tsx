@@ -62,7 +62,7 @@ export default function DiaryForm(props: { onPublished: (entry: DiaryEntry, ipfs
       />
       <textarea
         className="w-full border border-slate-700/70 bg-slate-900 text-slate-100 placeholder-slate-500 rounded-lg p-2 min-h-[140px] focus:outline-none focus:ring-2 focus:ring-fuchsia-400/60"
-        placeholder="Share your pedestrian journey..."
+        placeholder="Share your diary..."
         value={content}
         onChange={(e) => setContent(e.target.value)}
       />
