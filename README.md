@@ -8,6 +8,7 @@ A web-based diary for that:
 ## Stack
 - Vite + React (TypeScript)
 - Tailwind CSS
+- Aiken
 - Cardano CIP-30 wallet API (preprod/testnet)
 - IPFS via pinning provider HTTP API
 - External AI API (e.g., Hugging Face Inference API)
