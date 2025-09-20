@@ -2,19 +2,23 @@ import React from 'react'
 import WalletConnect from './components/WalletConnect'
 import DiaryForm, { DiaryEntry } from './components/DiaryForm'
 import OnChainNote from './components/OnChainNote'
+import ClaimReward from './components/ClaimReward'
+import { WalletAPI } from './services/cardano'
 
 export default function App() {
+  const [walletApi, setWalletApi] = React.useState<WalletAPI | null>(null)
   const [connected, setConnected] = React.useState(false)
   const [lastCid, setLastCid] = React.useState<string>('')
   const [entries, setEntries] = React.useState<Array<{ entry: DiaryEntry; cid: string }>>([])
 
   return (
-    <div className="max-w-3xl mx-auto p-6 space-y-6">
-      <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-cyan-400 via-fuchsia-400 to-indigo-400 bg-clip-text text-transparent">
-        Decentralized Diary — Cardano 
-      </h1>
+    <div className="max-w-2xl mx-auto p-4 sm:p-6 space-y-4">
+      <h1 className="text-xl sm:text-2xl font-bold text-center sm:text-left">Pedestrian Diary — Cardano (Preprod)</h1>
 
-      <WalletConnect onConnected={() => setConnected(true)} />
+      <WalletConnect onConnected={(api, info) => {
+        setWalletApi(api)
+        setConnected(true)
+      }} />
 
       <DiaryForm
         onPublished={(entry, cid) => {
@@ -25,8 +29,10 @@ export default function App() {
 
       {lastCid && <OnChainNote cid={lastCid} />}
 
+      {connected && lastCid && <ClaimReward walletApi={walletApi} lastCid={lastCid} />}
+
       <section className="space-y-3">
-        <h3 className="font-semibold text-lg text-slate-200">Recent Entries</h3>
+        <h3 className="font-semibold text-lg">Recent Entries</h3>
         {entries.map(({ entry, cid }, idx) => (
           <div
             key={idx}

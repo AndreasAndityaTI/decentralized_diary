@@ -1,0 +1,13 @@
+name = "decentralized_diary/diary_rewards"
+version = "0.1.0"
+license = "Apache-2.0"
+description = "Aiken contracts for the Decentralized Diary application"
+
+[repository]
+user = ""
+project = ""
+
+[[dependencies]]
+name = "aiken-lang/stdlib"
+version = "main"
+source = "github"
