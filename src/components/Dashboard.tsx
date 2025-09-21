@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { DiaryEntry } from "./DiaryForm";
+import DiaryForm from "./DiaryForm";
 
 interface DashboardProps {
   onPublish: (entry: DiaryEntry, cid: string) => void;
@@ -18,21 +19,6 @@ const moodEmojis = {
 };
 
 export default function Dashboard({ onPublish, entries }: DashboardProps) {
-  const [showAIChat, setShowAIChat] = useState(false);
-  const [aiResponse, setAiResponse] = useState("");
-
-  const handleAIChat = () => {
-    setShowAIChat(!showAIChat);
-    if (!showAIChat) {
-      // Simulate AI response
-      setTimeout(() => {
-        setAiResponse(
-          "I'm here to help you reflect on your day. What's on your mind?"
-        );
-      }, 1000);
-    }
-  };
-
   const todayEntry = entries.find(({ entry }) => {
     const today = new Date().toDateString();
     return new Date(entry.createdAt).toDateString() === today;
@@ -54,41 +40,7 @@ export default function Dashboard({ onPublish, entries }: DashboardProps) {
           </h1>
           <p className="text-gray-600 mt-1">How are you feeling today?</p>
         </div>
-        <div className="flex space-x-3">
-          <button
-            onClick={handleAIChat}
-            className="px-4 py-2 bg-gradient-to-r from-lavender to-sky-blue text-white rounded-xl hover:shadow-lg transition-all duration-200 flex items-center space-x-2"
-          >
-            <span>🤖</span>
-            <span>AI Companion</span>
-          </button>
-        </div>
       </div>
-
-      {/* AI Chat Panel */}
-      {showAIChat && (
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="w-8 h-8 bg-gradient-to-r from-lavender to-sky-blue rounded-full flex items-center justify-center">
-              <span className="text-white text-sm">🤖</span>
-            </div>
-            <h3 className="font-semibold text-gray-800">AI Companion</h3>
-          </div>
-          <div className="bg-gray-50 rounded-xl p-4 mb-4">
-            <p className="text-gray-700">{aiResponse}</p>
-          </div>
-          <div className="flex space-x-2">
-            <input
-              type="text"
-              placeholder="Ask me anything about your mood..."
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lavender"
-            />
-            <button className="px-6 py-2 bg-gradient-to-r from-lavender to-sky-blue text-white rounded-lg hover:shadow-lg transition-all duration-200">
-              Send
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Today's Entry Status */}
       {todayEntry ? (
@@ -121,11 +73,11 @@ export default function Dashboard({ onPublish, entries }: DashboardProps) {
           <p className="text-gray-600 text-sm mb-4">
             Start your journal entry and let AI analyze your mood
           </p>
-          <button className="px-6 py-2 bg-gradient-to-r from-lavender to-sky-blue text-white rounded-xl hover:shadow-lg transition-all duration-200">
-            Start Writing
-          </button>
         </div>
       )}
+
+      {/* Writing Form */}
+      <DiaryForm onPublished={onPublish} />
 
       {/* Recent Entries Preview */}
       <div className="space-y-4">

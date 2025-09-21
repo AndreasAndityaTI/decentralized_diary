@@ -55,7 +55,7 @@ export default function Landing({ onConnected }: LandingProps) {
 
         {/* CTA Section */}
         <div className="space-y-4">
-          <WalletConnect onConnected={onConnected} />
+          <WalletConnect onConnected={() => onConnected()} />
           <p className="text-sm text-gray-500">
             Connect your Cardano wallet to start your decentralized journaling
             journey

@@ -35,6 +35,8 @@ export default function DiaryForm(props: {
   const [error, setError] = React.useState("");
   const [showAIChat, setShowAIChat] = React.useState(false);
   const [aiMessage, setAiMessage] = React.useState("");
+  const [recommendations, setRecommendations] = React.useState<any[]>([]);
+  const [showRecommendations, setShowRecommendations] = React.useState(false);
 
   const analyze = async () => {
     try {
@@ -42,11 +44,262 @@ export default function DiaryForm(props: {
       setLoading(true);
       const res = await classifySentiment(content || title);
       setSentiment(res);
+      generateRecommendations(res, content);
     } catch (e: any) {
-      setError(e?.message || "Sentiment analysis failed");
+      setError(
+        e?.message ||
+          "Sorry, I couldn't understand your feelings right now. Please try again."
+      );
     } finally {
       setLoading(false);
     }
+  };
+
+  const generateRecommendations = (
+    mood: { label: string; score: number },
+    story: string
+  ) => {
+    const moodRecommendations = {
+      happy: {
+        books: [
+          {
+            title: "The Happiness Project",
+            author: "Gretchen Rubin",
+            reason: "Build on your positive energy",
+          },
+          {
+            title: "Big Magic",
+            author: "Elizabeth Gilbert",
+            reason: "Channel your joy into creativity",
+          },
+        ],
+        movies: [
+          {
+            title: "The Secret Life of Walter Mitty",
+            reason: "Adventure and self-discovery",
+          },
+          { title: "Amélie", reason: "Whimsical and heartwarming" },
+        ],
+        music: [
+          {
+            title: "Good Vibrations",
+            artist: "The Beach Boys",
+            reason: "Classic feel-good vibes",
+          },
+          {
+            title: "Here Comes the Sun",
+            artist: "The Beatles",
+            reason: "Uplifting and timeless",
+          },
+        ],
+        creators: [
+          {
+            name: "Matt D'Avella",
+            platform: "YouTube",
+            reason: "Minimalism and mindful living",
+          },
+          {
+            name: "The School of Life",
+            platform: "YouTube",
+            reason: "Philosophy for everyday happiness",
+          },
+        ],
+      },
+      sad: {
+        books: [
+          {
+            title: "The Gifts of Imperfection",
+            author: "Brené Brown",
+            reason: "Embrace vulnerability and healing",
+          },
+          {
+            title: "When Things Fall Apart",
+            author: "Pema Chödrön",
+            reason: "Finding peace in difficult times",
+          },
+        ],
+        movies: [
+          { title: "Inside Out", reason: "Understanding emotions and growth" },
+          { title: "The Pursuit of Happyness", reason: "Hope and resilience" },
+        ],
+        music: [
+          {
+            title: "Fix You",
+            artist: "Coldplay",
+            reason: "Comforting and healing",
+          },
+          {
+            title: "Lean on Me",
+            artist: "Bill Withers",
+            reason: "Support and community",
+          },
+        ],
+        creators: [
+          {
+            name: "Therapy in a Nutshell",
+            platform: "YouTube",
+            reason: "Mental health support and coping strategies",
+          },
+          {
+            name: "Kurzgesagt",
+            platform: "YouTube",
+            reason: "Educational content to distract and inspire",
+          },
+        ],
+      },
+      anxious: {
+        books: [
+          {
+            title: "The Anxiety and Phobia Workbook",
+            author: "Edmund Bourne",
+            reason: "Practical anxiety management",
+          },
+          {
+            title: "Wherever You Go, There You Are",
+            author: "Jon Kabat-Zinn",
+            reason: "Mindfulness for anxiety relief",
+          },
+        ],
+        movies: [
+          { title: "The Secret Garden", reason: "Calming and restorative" },
+          { title: "My Neighbor Totoro", reason: "Gentle and soothing" },
+        ],
+        music: [
+          {
+            title: "Weightless",
+            artist: "Marconi Union",
+            reason: "Scientifically designed to reduce anxiety",
+          },
+          {
+            title: "Clair de Lune",
+            artist: "Claude Debussy",
+            reason: "Classical calm and beauty",
+          },
+        ],
+        creators: [
+          {
+            name: "Meditation Minis",
+            platform: "YouTube",
+            reason: "Quick meditation and breathing exercises",
+          },
+          {
+            name: "The Honest Guys",
+            platform: "YouTube",
+            reason: "Guided meditations for anxiety relief",
+          },
+        ],
+      },
+      motivated: {
+        books: [
+          {
+            title: "Atomic Habits",
+            author: "James Clear",
+            reason: "Build systems for success",
+          },
+          {
+            title: "The 7 Habits of Highly Effective People",
+            author: "Stephen Covey",
+            reason: "Personal and professional growth",
+          },
+        ],
+        movies: [
+          { title: "Rocky", reason: "Classic underdog motivation" },
+          {
+            title: "The Social Network",
+            reason: "Entrepreneurship and innovation",
+          },
+        ],
+        music: [
+          {
+            title: "Eye of the Tiger",
+            artist: "Survivor",
+            reason: "Classic motivation anthem",
+          },
+          {
+            title: "Hall of Fame",
+            artist: "The Script",
+            reason: "Achievement and success",
+          },
+        ],
+        creators: [
+          {
+            name: "Gary Vaynerchuk",
+            platform: "YouTube",
+            reason: "Entrepreneurship and hustle",
+          },
+          {
+            name: "TED",
+            platform: "YouTube",
+            reason: "Ideas worth spreading and inspiration",
+          },
+        ],
+      },
+      calm: {
+        books: [
+          {
+            title: "The Art of Living",
+            author: "Thich Nhat Hanh",
+            reason: "Mindfulness and peace",
+          },
+          {
+            title: "Walden",
+            author: "Henry David Thoreau",
+            reason: "Simplicity and nature",
+          },
+        ],
+        movies: [
+          { title: "The Tree of Life", reason: "Contemplative and beautiful" },
+          { title: "Lost in Translation", reason: "Quiet and introspective" },
+        ],
+        music: [
+          {
+            title: "Weightless",
+            artist: "Marconi Union",
+            reason: "Ultimate relaxation",
+          },
+          {
+            title: "Spiegel im Spiegel",
+            artist: "Arvo Pärt",
+            reason: "Minimalist and peaceful",
+          },
+        ],
+        creators: [
+          {
+            name: "Peaceful Cuisine",
+            platform: "YouTube",
+            reason: "Calming cooking and mindfulness",
+          },
+          {
+            name: "ASMR Darling",
+            platform: "YouTube",
+            reason: "Relaxing ASMR content",
+          },
+        ],
+      },
+    };
+
+    const moodData =
+      moodRecommendations[mood.label as keyof typeof moodRecommendations] ||
+      moodRecommendations.happy;
+
+    // Generate 2-3 recommendations for each category
+    const recs = [
+      ...moodData.books
+        .slice(0, 2)
+        .map((book) => ({ ...book, type: "book", icon: "📚" })),
+      ...moodData.movies
+        .slice(0, 2)
+        .map((movie) => ({ ...movie, type: "movie", icon: "🎬" })),
+      ...moodData.music
+        .slice(0, 2)
+        .map((song) => ({ ...song, type: "music", icon: "🎵" })),
+      ...moodData.creators
+        .slice(0, 2)
+        .map((creator) => ({ ...creator, type: "creator", icon: "👤" })),
+    ];
+
+    setRecommendations(recs);
+    setShowRecommendations(true);
   };
 
   const publish = async () => {
@@ -63,7 +316,10 @@ export default function DiaryForm(props: {
       const ipfs = await uploadJsonToIpfs(entry);
       props.onPublished(entry, ipfs.cid);
     } catch (e: any) {
-      setError(e?.message || "Publish failed");
+      setError(
+        e?.message ||
+          "Oops! Couldn't save your entry right now. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -158,7 +414,7 @@ export default function DiaryForm(props: {
           disabled={loading || !content.trim()}
           className="px-6 py-3 rounded-xl bg-gradient-to-r from-mint-green to-soft-yellow text-gray-800 hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
         >
-          {loading ? "Analyzing..." : "🔍 Analyze My Mood"}
+          {loading ? "Understanding your feelings..." : "💭 How am I feeling?"}
         </button>
 
         {sentiment && (
@@ -184,13 +440,68 @@ export default function DiaryForm(props: {
           disabled={loading || !title.trim() || !content.trim()}
           className="px-8 py-3 rounded-xl bg-gradient-to-r from-lavender to-sky-blue text-white hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-lg"
         >
-          {loading ? "Publishing..." : "✨ Publish to IPFS"}
+          {loading ? "Saving your story..." : "💾 Save My Entry"}
         </button>
       </div>
 
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4">
           <p className="text-sm text-red-600">{error}</p>
+        </div>
+      )}
+
+      {/* Personalized Recommendations */}
+      {showRecommendations && recommendations.length > 0 && (
+        <div className="bg-gradient-to-r from-mint-green/20 to-soft-yellow/20 rounded-2xl p-6 border border-mint-green/30">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-semibold text-gray-800">
+              💡 Personalized Recommendations
+            </h3>
+            <button
+              onClick={() => setShowRecommendations(false)}
+              className="text-gray-400 hover:text-gray-600 text-xl"
+            >
+              ×
+            </button>
+          </div>
+          <p className="text-gray-600 text-sm mb-4">
+            Based on your mood and story, here are some recommendations to help
+            you through this moment:
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {recommendations.map((rec, index) => (
+              <div
+                key={index}
+                className="bg-white/60 backdrop-blur-sm rounded-xl p-4 hover:bg-white/80 transition-all duration-200"
+              >
+                <div className="flex items-start space-x-3">
+                  <span className="text-2xl">{rec.icon}</span>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-gray-800 text-sm">
+                      {rec.title || rec.name}
+                    </h4>
+                    {(rec.author || rec.artist) && (
+                      <p className="text-gray-600 text-xs">
+                        by {rec.author || rec.artist}
+                      </p>
+                    )}
+                    {rec.platform && (
+                      <p className="text-gray-500 text-xs">on {rec.platform}</p>
+                    )}
+                    <p className="text-gray-700 text-xs mt-1">{rec.reason}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 text-center">
+            <p className="text-xs text-gray-500">
+              💝 These recommendations are tailored to your current emotional
+              state
+            </p>
+          </div>
         </div>
       )}
     </div>

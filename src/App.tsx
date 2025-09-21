@@ -5,6 +5,9 @@ import Dashboard from "./components/Dashboard";
 import JournalLogs from "./components/JournalLogs";
 import MoodTrends from "./components/MoodTrends";
 import MoodMap from "./components/MoodMap";
+import AICompanion from "./components/AICompanion";
+import DAO from "./components/DAO";
+import Profile from "./components/Profile";
 import DiaryForm, { DiaryEntry } from "./components/DiaryForm";
 import OnChainNote from "./components/OnChainNote";
 
@@ -31,6 +34,12 @@ export default function App() {
         return <MoodTrends entries={entries} />;
       case "moodmap":
         return <MoodMap entries={entries} />;
+      case "ai-companion":
+        return <AICompanion />;
+      case "dao":
+        return <DAO />;
+      case "profile":
+        return <Profile />;
       case "settings":
         return (
           <div className="flex-1 p-8">
@@ -58,15 +67,6 @@ export default function App() {
         <Sidebar currentPage={currentPage} onPageChange={setCurrentPage} />
         <main className="flex-1">{renderPage()}</main>
       </div>
-
-      {/* Floating Diary Form - only show on dashboard */}
-      {currentPage === "dashboard" && (
-        <div className="fixed bottom-6 right-6 z-40">
-          <div className="max-w-md">
-            <DiaryForm onPublished={handlePublish} />
-          </div>
-        </div>
-      )}
 
       {/* OnChain Note - only show when there's a new entry */}
       {lastCid && (

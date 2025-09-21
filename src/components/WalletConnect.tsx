@@ -1,50 +1,68 @@
-import React from 'react'
-import { enableWallet, getWalletInfo, WalletAPI } from '../services/cardano'
+import React from "react";
+import { enableWallet, getWalletInfo, WalletAPI } from "../services/cardano";
 
-export default function WalletConnect(props: { onConnected: (api: WalletAPI, info: any) => void }) {
-  const [api, setApi] = React.useState<WalletAPI | null>(null)
-  const [info, setInfo] = React.useState<any>(null)
-  const [error, setError] = React.useState<string>('')
+export default function WalletConnect(props: {
+  onConnected: (api: WalletAPI, info: any) => void;
+}) {
+  const [api, setApi] = React.useState<WalletAPI | null>(null);
+  const [info, setInfo] = React.useState<any>(null);
+  const [error, setError] = React.useState<string>("");
+  const [loading, setLoading] = React.useState(false);
 
   const connect = async () => {
     try {
-      setError('')
-      const w = await enableWallet()
+      setError("");
+      setLoading(true);
+      const w = await enableWallet();
       if (!w) {
-        setError('No CIP-30 wallet found. Install Nami, Eternl, or Lace.')
-        return
+        setError("No CIP-30 wallet found. Install Nami, Eternl, or Lace.");
+        return;
       }
-      const i = await getWalletInfo(w)
+      const i = await getWalletInfo(w);
       if (i.networkId !== 0) {
-        setError('Please switch wallet to Preprod/Preview testnet.')
+        setError("Please switch wallet to Preprod/Preview testnet.");
+        return;
       }
-      setApi(w)
-      setInfo(i)
-      props.onConnected(w, i)
+      setApi(w);
+      setInfo(i);
+      props.onConnected(w, i);
     } catch (e: any) {
-      setError(e?.message || 'Wallet connect failed')
+      setError(e?.message || "Wallet connect failed");
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur shadow-[0_0_24px_-10px_rgba(99,102,241,0.45)]">
+    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-semibold text-lg text-slate-100">Wallet</h3>
+          <h3 className="font-semibold text-lg text-gray-800">
+            Connect Wallet
+          </h3>
           {info ? (
-            <p className="text-sm text-slate-400">Network: {info.networkId === 0 ? 'Testnet' : 'Mainnet'}</p>
+            <p className="text-sm text-gray-600">
+              Network: {info.networkId === 0 ? "Testnet" : "Mainnet"}
+            </p>
           ) : (
-            <p className="text-sm text-slate-400">Connect Cardano wallet (CIP-30)</p>
+            <p className="text-sm text-gray-600">
+              Connect your Cardano wallet to continue
+            </p>
           )}
         </div>
         <button
           onClick={connect}
-          className="px-3 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-fuchsia-600 text-white hover:from-indigo-500 hover:to-fuchsia-500 shadow-[0_0_20px_-8px_rgba(139,92,246,0.6)]"
+          disabled={loading}
+          className="px-6 py-3 rounded-xl bg-gradient-to-r from-lavender to-sky-blue text-white hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
         >
-          {api ? 'Reconnect' : 'Connect'}
+          {loading ? "Connecting..." : api ? "Reconnect" : "Connect Wallet"}
         </button>
       </div>
-      {error && <p className="mt-2 text-sm text-rose-400">{error}</p>}
+      {error && (
+        <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-3">
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
+      )}
     </div>
-  )
+  );
 }
