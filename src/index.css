@@ -2,5 +2,116 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body, #root { height: 100%; }
-body { @apply bg-gradient-to-br from-indigo-950 via-slate-950 to-black text-slate-100 antialiased; }
+/* Custom color palette for DeDiary */
+:root {
+  --lavender: #c8a2c8;
+  --sky-blue: #87ceeb;
+  --mint-green: #98ff98;
+  --soft-yellow: #fffacd;
+}
+
+/* Custom gradient classes */
+.bg-lavender {
+  background-color: var(--lavender);
+}
+.bg-sky-blue {
+  background-color: var(--sky-blue);
+}
+.bg-mint-green {
+  background-color: var(--mint-green);
+}
+.bg-soft-yellow {
+  background-color: var(--soft-yellow);
+}
+
+.from-lavender {
+  --tw-gradient-from: var(--lavender);
+}
+.to-sky-blue {
+  --tw-gradient-to: var(--sky-blue);
+}
+.to-mint-green {
+  --tw-gradient-to: var(--mint-green);
+}
+.to-soft-yellow {
+  --tw-gradient-to: var(--soft-yellow);
+}
+
+.text-lavender {
+  color: var(--lavender);
+}
+.text-sky-blue {
+  color: var(--sky-blue);
+}
+.text-mint-green {
+  color: var(--mint-green);
+}
+.text-soft-yellow {
+  color: var(--soft-yellow);
+}
+
+.border-lavender {
+  border-color: var(--lavender);
+}
+.border-sky-blue {
+  border-color: var(--sky-blue);
+}
+.border-mint-green {
+  border-color: var(--mint-green);
+}
+.border-soft-yellow {
+  border-color: var(--soft-yellow);
+}
+
+/* Smooth animations */
+* {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(45deg, var(--lavender), var(--sky-blue));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(45deg, var(--sky-blue), var(--mint-green));
+}
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  @apply bg-gradient-to-br from-lavender/10 via-sky-blue/10 to-mint-green/10 text-gray-800 antialiased;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+    sans-serif;
+}

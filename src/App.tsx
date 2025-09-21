@@ -1,61 +1,79 @@
-import React from 'react'
-import WalletConnect from './components/WalletConnect'
-import DiaryForm, { DiaryEntry } from './components/DiaryForm'
-import OnChainNote from './components/OnChainNote'
+import React from "react";
+import Landing from "./components/Landing";
+import Sidebar from "./components/Sidebar";
+import Dashboard from "./components/Dashboard";
+import JournalLogs from "./components/JournalLogs";
+import MoodTrends from "./components/MoodTrends";
+import MoodMap from "./components/MoodMap";
+import DiaryForm, { DiaryEntry } from "./components/DiaryForm";
+import OnChainNote from "./components/OnChainNote";
 
 export default function App() {
-  const [connected, setConnected] = React.useState(false)
-  const [lastCid, setLastCid] = React.useState<string>('')
-  const [entries, setEntries] = React.useState<Array<{ entry: DiaryEntry; cid: string }>>([])
+  const [connected, setConnected] = React.useState(false);
+  const [currentPage, setCurrentPage] = React.useState("dashboard");
+  const [lastCid, setLastCid] = React.useState<string>("");
+  const [entries, setEntries] = React.useState<
+    Array<{ entry: DiaryEntry; cid: string }>
+  >([]);
 
-  return (
-    <div className="max-w-3xl mx-auto p-6 space-y-6">
-      <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-cyan-400 via-fuchsia-400 to-indigo-400 bg-clip-text text-transparent">
-        Decentralized Diary — Cardano 
-      </h1>
+  const handlePublish = (entry: DiaryEntry, cid: string) => {
+    setLastCid(cid);
+    setEntries((prev) => [{ entry, cid }, ...prev]);
+  };
 
-      <WalletConnect onConnected={() => setConnected(true)} />
-
-      <DiaryForm
-        onPublished={(entry, cid) => {
-          setLastCid(cid)
-          setEntries((prev) => [{ entry, cid }, ...prev])
-        }}
-      />
-
-      {lastCid && <OnChainNote cid={lastCid} />}
-
-      <section className="space-y-3">
-        <h3 className="font-semibold text-lg text-slate-200">Recent Entries</h3>
-        {entries.map(({ entry, cid }, idx) => (
-          <div
-            key={idx}
-            className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur shadow-[0_0_20px_-8px_rgba(56,189,248,0.45)]"
-          >
-            <div className="flex items-center justify-between">
-              <h4 className="font-semibold text-slate-100">{entry.title}</h4>
-              <a
-                className="text-cyan-400 hover:text-cyan-300 hover:underline text-sm"
-                href={`https://ipfs.io/ipfs/${cid}`}
-                target="_blank"
-                rel="noreferrer"
-              >View on IPFS</a>
-            </div>
-            <p className="mt-2 text-slate-200 whitespace-pre-wrap">{entry.content}</p>
-            <div className="mt-2 text-sm text-slate-400">
-              <span>{new Date(entry.createdAt).toLocaleString()}</span>
-              {entry.location && <span> • {entry.location}</span>}
-              {entry.sentiment && <span> • {entry.sentiment.label} ({(entry.sentiment.score * 100).toFixed(1)}%)</span>}
+  const renderPage = () => {
+    switch (currentPage) {
+      case "dashboard":
+        return <Dashboard onPublish={handlePublish} entries={entries} />;
+      case "journal":
+        return <JournalLogs entries={entries} />;
+      case "trends":
+        return <MoodTrends entries={entries} />;
+      case "moodmap":
+        return <MoodMap entries={entries} />;
+      case "settings":
+        return (
+          <div className="flex-1 p-8">
+            <h1 className="text-3xl font-bold text-gray-800 mb-6">Settings</h1>
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+                Account Settings
+              </h2>
+              <p className="text-gray-600">Settings coming soon...</p>
             </div>
           </div>
-        ))}
-      </section>
+        );
+      default:
+        return <Dashboard onPublish={handlePublish} entries={entries} />;
+    }
+  };
 
-      {!connected && (
-        <p className="text-sm text-amber-300/90 bg-amber-500/10 border border-amber-400/30 p-3 rounded-lg">
-          Connect a Cardano testnet wallet to continue. Make sure it’s set to Preprod.
-        </p>
+  if (!connected) {
+    return <Landing onConnected={() => setConnected(true)} />;
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-lavender/10 via-sky-blue/10 to-mint-green/10">
+      <div className="flex">
+        <Sidebar currentPage={currentPage} onPageChange={setCurrentPage} />
+        <main className="flex-1">{renderPage()}</main>
+      </div>
+
+      {/* Floating Diary Form - only show on dashboard */}
+      {currentPage === "dashboard" && (
+        <div className="fixed bottom-6 right-6 z-40">
+          <div className="max-w-md">
+            <DiaryForm onPublished={handlePublish} />
+          </div>
+        </div>
+      )}
+
+      {/* OnChain Note - only show when there's a new entry */}
+      {lastCid && (
+        <div className="fixed top-6 right-6 z-50">
+          <OnChainNote cid={lastCid} />
+        </div>
       )}
     </div>
-  )
+  );
 }
