@@ -1,99 +1,509 @@
-import React from 'react'
-import { classifySentiment } from '../services/sentiment'
-import { uploadJsonToIpfs } from '../services/ipfs'
+import React from "react";
+import { classifySentiment } from "../services/sentiment";
+import { uploadJsonToIpfs } from "../services/ipfs";
 
 export type DiaryEntry = {
-  title: string
-  content: string
-  createdAt: string
-  location?: string
-  sentiment?: { label: string; score: number }
-}
+  title: string;
+  content: string;
+  createdAt: string;
+  location?: string;
+  sentiment?: { label: string; score: number };
+};
 
-export default function DiaryForm(props: { onPublished: (entry: DiaryEntry, ipfsCid: string) => void }) {
-  const [title, setTitle] = React.useState('')
-  const [content, setContent] = React.useState('')
-  const [location, setLocation] = React.useState('')
-  const [sentiment, setSentiment] = React.useState<{ label: string; score: number } | null>(null)
-  const [loading, setLoading] = React.useState(false)
-  const [error, setError] = React.useState('')
+const moodEmojis = {
+  happy: "😊",
+  sad: "😢",
+  anxious: "😰",
+  motivated: "💪",
+  calm: "😌",
+  excited: "🤩",
+  frustrated: "😤",
+  grateful: "🙏",
+};
+
+export default function DiaryForm(props: {
+  onPublished: (entry: DiaryEntry, ipfsCid: string) => void;
+}) {
+  const [title, setTitle] = React.useState("");
+  const [content, setContent] = React.useState("");
+  const [location, setLocation] = React.useState("");
+  const [sentiment, setSentiment] = React.useState<{
+    label: string;
+    score: number;
+  } | null>(null);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState("");
+  const [showAIChat, setShowAIChat] = React.useState(false);
+  const [aiMessage, setAiMessage] = React.useState("");
+  const [recommendations, setRecommendations] = React.useState<any[]>([]);
+  const [showRecommendations, setShowRecommendations] = React.useState(false);
 
   const analyze = async () => {
     try {
-      setError('')
-      setLoading(true)
-      const res = await classifySentiment(content || title)
-      setSentiment(res)
+      setError("");
+      setLoading(true);
+      const res = await classifySentiment(content || title);
+      setSentiment(res);
+      generateRecommendations(res, content);
     } catch (e: any) {
-      setError(e?.message || 'Sentiment analysis failed')
+      setError(
+        e?.message ||
+          "Sorry, I couldn't understand your feelings right now. Please try again."
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
+
+  const generateRecommendations = (
+    mood: { label: string; score: number },
+    story: string
+  ) => {
+    const moodRecommendations = {
+      happy: {
+        books: [
+          {
+            title: "The Happiness Project",
+            author: "Gretchen Rubin",
+            reason: "Build on your positive energy",
+          },
+          {
+            title: "Big Magic",
+            author: "Elizabeth Gilbert",
+            reason: "Channel your joy into creativity",
+          },
+        ],
+        movies: [
+          {
+            title: "The Secret Life of Walter Mitty",
+            reason: "Adventure and self-discovery",
+          },
+          { title: "Amélie", reason: "Whimsical and heartwarming" },
+        ],
+        music: [
+          {
+            title: "Good Vibrations",
+            artist: "The Beach Boys",
+            reason: "Classic feel-good vibes",
+          },
+          {
+            title: "Here Comes the Sun",
+            artist: "The Beatles",
+            reason: "Uplifting and timeless",
+          },
+        ],
+        creators: [
+          {
+            name: "Matt D'Avella",
+            platform: "YouTube",
+            reason: "Minimalism and mindful living",
+          },
+          {
+            name: "The School of Life",
+            platform: "YouTube",
+            reason: "Philosophy for everyday happiness",
+          },
+        ],
+      },
+      sad: {
+        books: [
+          {
+            title: "The Gifts of Imperfection",
+            author: "Brené Brown",
+            reason: "Embrace vulnerability and healing",
+          },
+          {
+            title: "When Things Fall Apart",
+            author: "Pema Chödrön",
+            reason: "Finding peace in difficult times",
+          },
+        ],
+        movies: [
+          { title: "Inside Out", reason: "Understanding emotions and growth" },
+          { title: "The Pursuit of Happyness", reason: "Hope and resilience" },
+        ],
+        music: [
+          {
+            title: "Fix You",
+            artist: "Coldplay",
+            reason: "Comforting and healing",
+          },
+          {
+            title: "Lean on Me",
+            artist: "Bill Withers",
+            reason: "Support and community",
+          },
+        ],
+        creators: [
+          {
+            name: "Therapy in a Nutshell",
+            platform: "YouTube",
+            reason: "Mental health support and coping strategies",
+          },
+          {
+            name: "Kurzgesagt",
+            platform: "YouTube",
+            reason: "Educational content to distract and inspire",
+          },
+        ],
+      },
+      anxious: {
+        books: [
+          {
+            title: "The Anxiety and Phobia Workbook",
+            author: "Edmund Bourne",
+            reason: "Practical anxiety management",
+          },
+          {
+            title: "Wherever You Go, There You Are",
+            author: "Jon Kabat-Zinn",
+            reason: "Mindfulness for anxiety relief",
+          },
+        ],
+        movies: [
+          { title: "The Secret Garden", reason: "Calming and restorative" },
+          { title: "My Neighbor Totoro", reason: "Gentle and soothing" },
+        ],
+        music: [
+          {
+            title: "Weightless",
+            artist: "Marconi Union",
+            reason: "Scientifically designed to reduce anxiety",
+          },
+          {
+            title: "Clair de Lune",
+            artist: "Claude Debussy",
+            reason: "Classical calm and beauty",
+          },
+        ],
+        creators: [
+          {
+            name: "Meditation Minis",
+            platform: "YouTube",
+            reason: "Quick meditation and breathing exercises",
+          },
+          {
+            name: "The Honest Guys",
+            platform: "YouTube",
+            reason: "Guided meditations for anxiety relief",
+          },
+        ],
+      },
+      motivated: {
+        books: [
+          {
+            title: "Atomic Habits",
+            author: "James Clear",
+            reason: "Build systems for success",
+          },
+          {
+            title: "The 7 Habits of Highly Effective People",
+            author: "Stephen Covey",
+            reason: "Personal and professional growth",
+          },
+        ],
+        movies: [
+          { title: "Rocky", reason: "Classic underdog motivation" },
+          {
+            title: "The Social Network",
+            reason: "Entrepreneurship and innovation",
+          },
+        ],
+        music: [
+          {
+            title: "Eye of the Tiger",
+            artist: "Survivor",
+            reason: "Classic motivation anthem",
+          },
+          {
+            title: "Hall of Fame",
+            artist: "The Script",
+            reason: "Achievement and success",
+          },
+        ],
+        creators: [
+          {
+            name: "Gary Vaynerchuk",
+            platform: "YouTube",
+            reason: "Entrepreneurship and hustle",
+          },
+          {
+            name: "TED",
+            platform: "YouTube",
+            reason: "Ideas worth spreading and inspiration",
+          },
+        ],
+      },
+      calm: {
+        books: [
+          {
+            title: "The Art of Living",
+            author: "Thich Nhat Hanh",
+            reason: "Mindfulness and peace",
+          },
+          {
+            title: "Walden",
+            author: "Henry David Thoreau",
+            reason: "Simplicity and nature",
+          },
+        ],
+        movies: [
+          { title: "The Tree of Life", reason: "Contemplative and beautiful" },
+          { title: "Lost in Translation", reason: "Quiet and introspective" },
+        ],
+        music: [
+          {
+            title: "Weightless",
+            artist: "Marconi Union",
+            reason: "Ultimate relaxation",
+          },
+          {
+            title: "Spiegel im Spiegel",
+            artist: "Arvo Pärt",
+            reason: "Minimalist and peaceful",
+          },
+        ],
+        creators: [
+          {
+            name: "Peaceful Cuisine",
+            platform: "YouTube",
+            reason: "Calming cooking and mindfulness",
+          },
+          {
+            name: "ASMR Darling",
+            platform: "YouTube",
+            reason: "Relaxing ASMR content",
+          },
+        ],
+      },
+    };
+
+    const moodData =
+      moodRecommendations[mood.label as keyof typeof moodRecommendations] ||
+      moodRecommendations.happy;
+
+    // Generate 2-3 recommendations for each category
+    const recs = [
+      ...moodData.books
+        .slice(0, 2)
+        .map((book) => ({ ...book, type: "book", icon: "📚" })),
+      ...moodData.movies
+        .slice(0, 2)
+        .map((movie) => ({ ...movie, type: "movie", icon: "🎬" })),
+      ...moodData.music
+        .slice(0, 2)
+        .map((song) => ({ ...song, type: "music", icon: "🎵" })),
+      ...moodData.creators
+        .slice(0, 2)
+        .map((creator) => ({ ...creator, type: "creator", icon: "👤" })),
+    ];
+
+    setRecommendations(recs);
+    setShowRecommendations(true);
+  };
 
   const publish = async () => {
     try {
-      setError('')
-      setLoading(true)
+      setError("");
+      setLoading(true);
       const entry: DiaryEntry = {
         title,
         content,
         createdAt: new Date().toISOString(),
         location: location || undefined,
         sentiment: sentiment || undefined,
-      }
-      const ipfs = await uploadJsonToIpfs(entry)
-      props.onPublished(entry, ipfs.cid)
+      };
+      const ipfs = await uploadJsonToIpfs(entry);
+      props.onPublished(entry, ipfs.cid);
     } catch (e: any) {
-      setError(e?.message || 'Publish failed')
+      setError(
+        e?.message ||
+          "Oops! Couldn't save your entry right now. Please try again."
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur space-y-3 shadow-[0_0_24px_-10px_rgba(34,211,238,0.35)]">
-      <h3 className="font-semibold text-lg text-slate-100">New Diary Entry</h3>
-      <input
-        className="w-full border border-slate-700/70 bg-slate-900 text-slate-100 placeholder-slate-500 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-cyan-400/60"
-        placeholder="Title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-      />
-      <textarea
-        className="w-full border border-slate-700/70 bg-slate-900 text-slate-100 placeholder-slate-500 rounded-lg p-2 min-h-[140px] focus:outline-none focus:ring-2 focus:ring-fuchsia-400/60"
-        placeholder="Share your pedestrian journey..."
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-      />
-      <input
-        className="w-full border border-slate-700/70 bg-slate-900 text-slate-100 placeholder-slate-500 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-indigo-400/60"
-        placeholder="Location (optional)"
-        value={location}
-        onChange={(e) => setLocation(e.target.value)}
-      />
-      <div className="flex items-center gap-2">
+    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200 space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-2xl font-bold text-gray-800">
+          Write Today's Story
+        </h3>
+        <button
+          onClick={() => setShowAIChat(!showAIChat)}
+          className="px-4 py-2 bg-gradient-to-r from-lavender to-sky-blue text-white rounded-xl hover:shadow-lg transition-all duration-200 flex items-center space-x-2"
+        >
+          <span>🤖</span>
+          <span>AI Companion</span>
+        </button>
+      </div>
+
+      {/* AI Chat Panel */}
+      {showAIChat && (
+        <div className="bg-gradient-to-r from-lavender/10 to-sky-blue/10 rounded-xl p-4 border border-lavender/20">
+          <div className="flex items-center space-x-3 mb-3">
+            <div className="w-8 h-8 bg-gradient-to-r from-lavender to-sky-blue rounded-full flex items-center justify-center">
+              <span className="text-white text-sm">🤖</span>
+            </div>
+            <h4 className="font-semibold text-gray-800">
+              AI Writing Assistant
+            </h4>
+          </div>
+          <div className="bg-white/60 rounded-lg p-3 mb-3">
+            <p className="text-gray-700 text-sm">
+              {aiMessage ||
+                "I'm here to help you reflect on your day. What's on your mind? I can help you organize your thoughts or suggest writing prompts."}
+            </p>
+          </div>
+          <div className="flex space-x-2">
+            <input
+              type="text"
+              placeholder="Ask me anything about your mood or writing..."
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lavender text-sm"
+              onKeyPress={(e) => {
+                if (e.key === "Enter") {
+                  setAiMessage(
+                    "Thanks for sharing! I can see you're working through some thoughts. Try writing about what made you feel this way today."
+                  );
+                }
+              }}
+            />
+            <button
+              className="px-4 py-2 bg-gradient-to-r from-lavender to-sky-blue text-white rounded-lg hover:shadow-lg transition-all duration-200 text-sm"
+              onClick={() =>
+                setAiMessage(
+                  "Thanks for sharing! I can see you're working through some thoughts. Try writing about what made you feel this way today."
+                )
+              }
+            >
+              Send
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-4">
+        <input
+          className="w-full border border-gray-300 bg-white text-gray-800 placeholder-gray-500 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-lavender text-lg"
+          placeholder="What's your story title today?"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+
+        <textarea
+          className="w-full border border-gray-300 bg-white text-gray-800 placeholder-gray-500 rounded-xl p-4 min-h-[200px] focus:outline-none focus:ring-2 focus:ring-lavender resize-none text-lg leading-relaxed"
+          placeholder="How are you feeling today? What happened? What are you grateful for? Share your thoughts freely..."
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+        />
+
+        <input
+          className="w-full border border-gray-300 bg-white text-gray-800 placeholder-gray-500 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-lavender"
+          placeholder="📍 Where are you writing from? (optional)"
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+        />
+      </div>
+
+      {/* Mood Analysis */}
+      <div className="flex items-center justify-between">
         <button
           onClick={analyze}
-          disabled={loading}
-          className="px-3 py-2 rounded-lg bg-gradient-to-r from-cyan-600 to-fuchsia-600 text-white hover:from-cyan-500 hover:to-fuchsia-500 disabled:opacity-50"
+          disabled={loading || !content.trim()}
+          className="px-6 py-3 rounded-xl bg-gradient-to-r from-mint-green to-soft-yellow text-gray-800 hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
         >
-          Analyze Sentiment
+          {loading ? "Understanding your feelings..." : "💭 How am I feeling?"}
         </button>
+
         {sentiment && (
-          <span className="text-sm text-slate-300">{sentiment.label} ({(sentiment.score * 100).toFixed(1)}%)</span>
+          <div className="flex items-center space-x-3 bg-gradient-to-r from-lavender/20 to-sky-blue/20 rounded-xl p-3">
+            <span className="text-2xl">
+              {moodEmojis[sentiment.label as keyof typeof moodEmojis] || "😊"}
+            </span>
+            <div>
+              <div className="font-semibold text-gray-800 capitalize">
+                {sentiment.label}
+              </div>
+              <div className="text-sm text-gray-600">
+                {(sentiment.score * 100).toFixed(1)}% confidence
+              </div>
+            </div>
+          </div>
         )}
       </div>
+
       <div className="flex justify-end">
         <button
           onClick={publish}
-          disabled={loading}
-          className="px-3 py-2 rounded-lg bg-gradient-to-r from-emerald-600 to-cyan-600 text-white hover:from-emerald-500 hover:to-cyan-500 disabled:opacity-50"
+          disabled={loading || !title.trim() || !content.trim()}
+          className="px-8 py-3 rounded-xl bg-gradient-to-r from-lavender to-sky-blue text-white hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-lg"
         >
-          Publish to IPFS
+          {loading ? "Saving your story..." : "💾 Save My Entry"}
         </button>
       </div>
-      {error && <p className="text-sm text-rose-400">{error}</p>}
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
+      )}
+
+      {/* Personalized Recommendations */}
+      {showRecommendations && recommendations.length > 0 && (
+        <div className="bg-gradient-to-r from-mint-green/20 to-soft-yellow/20 rounded-2xl p-6 border border-mint-green/30">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-semibold text-gray-800">
+              💡 Personalized Recommendations
+            </h3>
+            <button
+              onClick={() => setShowRecommendations(false)}
+              className="text-gray-400 hover:text-gray-600 text-xl"
+            >
+              ×
+            </button>
+          </div>
+          <p className="text-gray-600 text-sm mb-4">
+            Based on your mood and story, here are some recommendations to help
+            you through this moment:
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {recommendations.map((rec, index) => (
+              <div
+                key={index}
+                className="bg-white/60 backdrop-blur-sm rounded-xl p-4 hover:bg-white/80 transition-all duration-200"
+              >
+                <div className="flex items-start space-x-3">
+                  <span className="text-2xl">{rec.icon}</span>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-gray-800 text-sm">
+                      {rec.title || rec.name}
+                    </h4>
+                    {(rec.author || rec.artist) && (
+                      <p className="text-gray-600 text-xs">
+                        by {rec.author || rec.artist}
+                      </p>
+                    )}
+                    {rec.platform && (
+                      <p className="text-gray-500 text-xs">on {rec.platform}</p>
+                    )}
+                    <p className="text-gray-700 text-xs mt-1">{rec.reason}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 text-center">
+            <p className="text-xs text-gray-500">
+              💝 These recommendations are tailored to your current emotional
+              state
+            </p>
+          </div>
+        </div>
+      )}
     </div>
-  )
+  );
 }

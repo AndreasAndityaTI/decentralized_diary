@@ -1,0 +1,263 @@
+import React, { useState } from "react";
+
+interface MoodMapProps {
+  entries: Array<{ entry: any; cid: string }>;
+}
+
+const globalMoodData = {
+  motivated: 35,
+  happy: 28,
+  calm: 18,
+  excited: 12,
+  grateful: 4,
+  anxious: 2,
+  sad: 1,
+};
+
+const categoryData = {
+  work: { motivated: 45, anxious: 30, happy: 25 },
+  love: { happy: 60, excited: 25, sad: 15 },
+  family: { grateful: 40, happy: 35, calm: 25 },
+  health: { motivated: 50, calm: 30, anxious: 20 },
+};
+
+const moodEmojis = {
+  happy: "😊",
+  sad: "😢",
+  anxious: "😰",
+  motivated: "💪",
+  calm: "😌",
+  excited: "🤩",
+  frustrated: "😤",
+  grateful: "🙏",
+};
+
+const moodColors = {
+  happy: "#FFD700",
+  sad: "#87CEEB",
+  anxious: "#FF6B6B",
+  motivated: "#4ECDC4",
+  calm: "#A8E6CF",
+  excited: "#FFB6C1",
+  frustrated: "#FFA07A",
+  grateful: "#98FB98",
+};
+
+export default function MoodMap({ entries }: MoodMapProps) {
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [hoveredMood, setHoveredMood] = useState<string | null>(null);
+
+  const getDisplayData = () => {
+    if (selectedCategory === "all") {
+      return globalMoodData;
+    }
+    return (
+      categoryData[selectedCategory as keyof typeof categoryData] ||
+      globalMoodData
+    );
+  };
+
+  const displayData = getDisplayData();
+  const total = Object.values(displayData).reduce(
+    (sum, value) => sum + value,
+    0
+  );
+
+  return (
+    <div className="flex-1 p-8 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-gray-800">Global MoodMap</h1>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setSelectedCategory("all")}
+            className={`px-4 py-2 rounded-lg transition-all duration-200 ${
+              selectedCategory === "all"
+                ? "bg-gradient-to-r from-lavender to-sky-blue text-white"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
+          >
+            All
+          </button>
+          {Object.keys(categoryData).map((category) => (
+            <button
+              key={category}
+              onClick={() => setSelectedCategory(category)}
+              className={`px-4 py-2 rounded-lg transition-all duration-200 capitalize ${
+                selectedCategory === category
+                  ? "bg-gradient-to-r from-lavender to-sky-blue text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Global Mood Overview */}
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200">
+        <h3 className="text-xl font-semibold text-gray-800 mb-4">
+          {selectedCategory === "all"
+            ? "🌍 Global Mood Today"
+            : `📊 ${
+                selectedCategory.charAt(0).toUpperCase() +
+                selectedCategory.slice(1)
+              } Moods`}
+        </h3>
+
+        {/* Mood Heatmap */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {Object.entries(displayData).map(([mood, count]) => {
+            const percentage = total > 0 ? (count / total) * 100 : 0;
+            const intensity = Math.min(percentage / 20, 1); // Scale intensity
+
+            return (
+              <div
+                key={mood}
+                className={`p-4 rounded-xl transition-all duration-200 cursor-pointer ${
+                  hoveredMood === mood ? "scale-105 shadow-lg" : ""
+                }`}
+                style={{
+                  backgroundColor: moodColors[mood as keyof typeof moodColors],
+                  opacity: 0.3 + intensity * 0.7,
+                }}
+                onMouseEnter={() => setHoveredMood(mood)}
+                onMouseLeave={() => setHoveredMood(null)}
+              >
+                <div className="text-center">
+                  <div className="text-3xl mb-2">
+                    {moodEmojis[mood as keyof typeof moodEmojis]}
+                  </div>
+                  <div className="font-semibold text-gray-800 capitalize">
+                    {mood}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {percentage.toFixed(1)}%
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Mood Distribution Chart */}
+        <div className="space-y-3">
+          {Object.entries(displayData)
+            .sort(([, a], [, b]) => b - a)
+            .map(([mood, count]) => {
+              const percentage = total > 0 ? (count / total) * 100 : 0;
+              return (
+                <div key={mood} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-lg">
+                        {moodEmojis[mood as keyof typeof moodEmojis]}
+                      </span>
+                      <span className="font-medium text-gray-700 capitalize">
+                        {mood}
+                      </span>
+                    </div>
+                    <span className="text-sm text-gray-500">
+                      {count}% of users
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div
+                      className="h-3 rounded-full transition-all duration-500"
+                      style={{
+                        width: `${percentage}%`,
+                        backgroundColor:
+                          moodColors[mood as keyof typeof moodColors],
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+        </div>
+      </div>
+
+      {/* Interactive World Map Visualization */}
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200">
+        <h3 className="text-xl font-semibold text-gray-800 mb-4">
+          🗺️ Mood Heatmap
+        </h3>
+
+        {/* Simplified World Map Grid */}
+        <div className="grid grid-cols-8 gap-1 mb-4">
+          {Array.from({ length: 64 }, (_, i) => {
+            const mood =
+              Object.keys(displayData)[i % Object.keys(displayData).length];
+            const intensity = Math.random() * 0.8 + 0.2;
+            return (
+              <div
+                key={i}
+                className="aspect-square rounded-sm transition-all duration-200 hover:scale-110 cursor-pointer"
+                style={{
+                  backgroundColor: moodColors[mood as keyof typeof moodColors],
+                  opacity: intensity,
+                }}
+                title={`${mood} mood region`}
+              />
+            );
+          })}
+        </div>
+
+        <p className="text-sm text-gray-500 text-center">
+          Interactive regions showing global mood distribution (simulated data)
+        </p>
+      </div>
+
+      {/* Your Contribution */}
+      <div className="bg-gradient-to-r from-mint-green/20 to-soft-yellow/20 rounded-2xl p-6 border border-mint-green/30">
+        <h3 className="text-xl font-semibold text-gray-800 mb-4">
+          🌟 Your Contribution
+        </h3>
+        <div className="space-y-3 text-gray-700">
+          <p>
+            You've contributed <strong>{entries.length}</strong> mood entries to
+            the global dataset!
+          </p>
+          {entries.length > 0 && (
+            <p>
+              Your most common mood is{" "}
+              <strong>
+                {
+                  Object.entries(
+                    entries.reduce((acc, { entry }) => {
+                      const mood = entry.sentiment?.label || "unknown";
+                      acc[mood] = (acc[mood] || 0) + 1;
+                      return acc;
+                    }, {} as { [key: string]: number })
+                  ).reduce((a, b) => (a[1] > b[1] ? a : b))[0]
+                }
+              </strong>
+              .
+            </p>
+          )}
+          <p className="text-sm text-gray-600">
+            Your data helps create a better understanding of global emotional
+            patterns while keeping your personal stories private.
+          </p>
+        </div>
+      </div>
+
+      {/* Real-time Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-gradient-to-r from-lavender to-sky-blue rounded-xl p-4 text-white text-center">
+          <div className="text-2xl font-bold">1,247</div>
+          <div className="text-sm opacity-80">Active Users Today</div>
+        </div>
+        <div className="bg-gradient-to-r from-mint-green to-soft-yellow rounded-xl p-4 text-gray-800 text-center">
+          <div className="text-2xl font-bold">3,891</div>
+          <div className="text-sm opacity-80">Mood Entries Today</div>
+        </div>
+        <div className="bg-gradient-to-r from-soft-yellow to-mint-green rounded-xl p-4 text-gray-800 text-center">
+          <div className="text-2xl font-bold">68%</div>
+          <div className="text-sm opacity-80">Positive Moods</div>
+        </div>
+      </div>
+    </div>
+  );
+}
