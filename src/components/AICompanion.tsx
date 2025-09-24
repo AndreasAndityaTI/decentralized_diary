@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { generateAIReply } from "../services/ai";
 
 export default function AICompanion() {
   const [messages, setMessages] = useState([
@@ -26,31 +27,30 @@ export default function AICompanion() {
     setInputMessage("");
     setIsTyping(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse = generateAIResponse(inputMessage);
+    try {
+      const history = messages.map((m) => (m.isAI ? `Assistant: ${m.text}` : `User: ${m.text}`));
+      const aiText = await generateAIReply(inputMessage, history);
       const aiMessage = {
         id: messages.length + 2,
-        text: aiResponse,
+        text: aiText,
         isAI: true,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, aiMessage]);
+    } catch (e) {
+      const aiMessage = {
+        id: messages.length + 2,
+        text: "Sorry, I'm having trouble reaching the AI service. Please try again.",
+        isAI: true,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, aiMessage]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
-  const generateAIResponse = (userInput: string) => {
-    const responses = [
-      "That sounds really interesting! Can you tell me more about how that made you feel?",
-      "I can sense some strong emotions in what you're sharing. It's okay to feel this way. What do you think triggered these feelings?",
-      "Thank you for opening up to me. It takes courage to share your thoughts. How would you like to work through this?",
-      "I hear you. Sometimes it helps to write about the specific moments that stood out to you today. What was the most significant part of your day?",
-      "It sounds like you're processing a lot right now. That's completely normal. What would you like to focus on in your journal entry?",
-      "I appreciate you sharing this with me. Writing can be a powerful tool for understanding our emotions. What would you like to explore further?",
-    ];
-    return responses[Math.floor(Math.random() * responses.length)];
-  };
+
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
