@@ -8,7 +8,8 @@ export type SentimentResult = {
   score: number
 }
 
-const SENTIMENT_ENDPOINT = import.meta.env.VITE_SENTIMENT_ENDPOINT || ''
+const SENTIMENT_ENDPOINT = import.meta.env.VITE_SENTIMENT_ENDPOINT || 'http://localhost:11434/api/generate'
+const SENTIMENT_MODEL = import.meta.env.VITE_SENTIMENT_MODEL || 'phi3'
 const SENTIMENT_AUTH = import.meta.env.VITE_SENTIMENT_AUTH || ''
 
 export async function classifySentiment(text: string): Promise<SentimentResult> {
@@ -16,32 +17,37 @@ export async function classifySentiment(text: string): Promise<SentimentResult> 
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
   }
   if (SENTIMENT_AUTH) headers['Authorization'] = SENTIMENT_AUTH
 
   try {
-    // Add options.wait_for_model to avoid cold-start errors and unify behavior
+    const prompt = `Given the following text, classify its predominant sentiment as one of the following labels: 'happy', 'sad', 'angry', 'neutral'. Return only the label as a single word.
+
+Text: "${text}"
+
+Sentiment:`
+
     const body = {
-      inputs: text,
-      options: { wait_for_model: true },
+      model: SENTIMENT_MODEL,
+      prompt: prompt,
+      stream: false,
     }
 
-    const res = await axios.post(SENTIMENT_ENDPOINT, { inputs: text }, { headers })
+    const res = await axios.post(SENTIMENT_ENDPOINT, body, { headers })
 
-    // Hugging Face pipelines often return array-of-arrays of {label, score}
-    const pred = Array.isArray(res.data) ? (Array.isArray(res.data[0]) ? res.data[0][0] : res.data[0]) : res.data
-
-    // The model j-hartmann/emotion-english-distilroberta-base returns labels like 'joy', 'sadness', etc.
-    // We map them to the simplified categories requested.
-    const modelLabel = pred?.label || 'neutral'
-    const score = pred?.score ?? 0.5
+    const modelLabel = (res.data?.response || 'neutral').trim().toLowerCase()
+    
+    // We can't get a score from a generative model like this, so we'll default to a high score.
+    const score = 0.9 
 
     const labelMap: { [key: string]: string } = {
       joy: 'happy',
       sadness: 'sad',
       anger: 'angry',
-      neutral: 'neutral'
+      neutral: 'neutral',
+      happy: 'happy',
+      sad: 'sad',
+      angry: 'angry',
     }
 
     let label = labelMap[modelLabel] || 'neutral' // Default to neutral for other emotions
@@ -56,8 +62,8 @@ export async function classifySentiment(text: string): Promise<SentimentResult> 
     return { label, score }
   } catch (err: any) {
     const status = err?.response?.status
-    const hfMsg = err?.response?.data?.error || err?.response?.data?.message
-    const base = status ? `Hugging Face API error ${status}` : 'Hugging Face API error'
-    throw new Error(hfMsg ? `${base}: ${hfMsg}` : base)
+    const ollamaMsg = err?.response?.data?.error
+    const base = status ? `Ollama API error ${status}` : 'Ollama API error'
+    throw new Error(ollamaMsg ? `${base}: ${ollamaMsg}` : base)
   }
 }
