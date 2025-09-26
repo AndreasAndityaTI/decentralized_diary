@@ -1,6 +1,6 @@
 # Cardano Decentralized Diary
 
-A web-based diary for pedestrians that:
+A web-based diary that:
 - **Decentralized account**: connects to Cardano CIP-30 wallets (Nami/Eternl/Lace)
 - **AI sentiment**: calls an external inference API to classify sentiment
 - **Decentralized storage**: uploads diary entries to IPFS, with the option to anchor CIDs on-chain later
