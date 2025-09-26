@@ -10,7 +10,7 @@ A web-based diary that:
 - Tailwind CSS
 - Cardano CIP-30 wallet API (preprod/testnet)
 - IPFS via pinning provider HTTP API
-- External AI API (e.g., Hugging Face Inference API)
+- AI Model (e.g., Phi3 from Ollama)
 
 ## Setup
 
