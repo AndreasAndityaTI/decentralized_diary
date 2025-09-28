@@ -57,8 +57,18 @@ export default function App() {
     }
   };
 
+  const handleWalletConnected = (api: any, info: any) => {
+    console.log("Wallet connected, redirecting to dashboard...", { api, info });
+    setConnected(true);
+  };
+
+  // Debug: Track connected state changes
+  React.useEffect(() => {
+    console.log("Connected state changed:", connected);
+  }, [connected]);
+
   if (!connected) {
-    return <Landing onConnected={() => setConnected(true)} />;
+    return <Landing onConnected={handleWalletConnected} />;
   }
 
   return (
