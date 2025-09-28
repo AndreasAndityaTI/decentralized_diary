@@ -6,7 +6,7 @@ import JournalLogs from "./components/JournalLogs";
 import MoodTrends from "./components/MoodTrends";
 import MoodMap from "./components/MoodMap";
 import AICompanion from "./components/AICompanion";
-import DAO from "./components/DAO";
+import Community from "./components/Community";
 import Profile from "./components/Profile";
 import DiaryForm, { DiaryEntry } from "./components/DiaryForm";
 import OnChainNote from "./components/OnChainNote";
@@ -37,7 +37,7 @@ export default function App() {
       case "ai-companion":
         return <AICompanion />;
       case "dao":
-        return <DAO />;
+        return <Community />;
       case "profile":
         return <Profile />;
       case "settings":
@@ -57,8 +57,8 @@ export default function App() {
     }
   };
 
-  const handleWalletConnected = (api: any, info: any) => {
-    console.log("Wallet connected, redirecting to dashboard...", { api, info });
+  const handleWalletConnected = () => {
+    console.log("Wallet connected, redirecting to dashboard...");
     setConnected(true);
   };
 

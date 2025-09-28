@@ -32,43 +32,17 @@ export default function JournalLogs({ entries }: JournalLogsProps) {
     entry: DiaryEntry;
     cid: string;
   } | null>(null);
-  const [filter, setFilter] = useState("all");
-
-  const filteredEntries = entries.filter(({ entry }) => {
-    if (filter === "all") return true;
-    return entry.sentiment?.label === filter;
-  });
-
-  const moodCategories = [
-    ...new Set(
-      entries.map(({ entry }) => entry.sentiment?.label).filter(Boolean)
-    ),
-  ];
 
   return (
     <div className="flex-1 p-8 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-800">Journal Logs</h1>
-        <div className="flex items-center space-x-4">
-          <select
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lavender"
-          >
-            <option value="all">All Moods</option>
-            {moodCategories.map((mood) => (
-              <option key={mood} value={mood}>
-                {moodEmojis[mood as keyof typeof moodEmojis]} {mood}
-              </option>
-            ))}
-          </select>
-        </div>
       </div>
 
       {/* Timeline */}
       <div className="space-y-4">
-        {filteredEntries.length === 0 ? (
+        {entries.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">📝</div>
             <h3 className="text-xl font-semibold text-gray-600 mb-2">
@@ -80,7 +54,7 @@ export default function JournalLogs({ entries }: JournalLogsProps) {
           </div>
         ) : (
           <div className="space-y-4">
-            {filteredEntries.map(({ entry, cid }, idx) => (
+            {entries.map(({ entry, cid }, idx) => (
               <div
                 key={idx}
                 className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-200 cursor-pointer"

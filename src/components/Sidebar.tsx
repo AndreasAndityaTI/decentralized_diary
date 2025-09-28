@@ -11,7 +11,6 @@ const menuItems = [
   { id: "trends", label: "Mood Trends", icon: "📊" },
   { id: "moodmap", label: "MoodMap", icon: "🌍" },
   { id: "ai-companion", label: "AI Companion", icon: "🤖" },
-  { id: "dao", label: "DAO Research", icon: "🏛️" },
   { id: "profile", label: "Profile", icon: "👤" },
   { id: "settings", label: "Settings", icon: "⚙️" },
 ];
