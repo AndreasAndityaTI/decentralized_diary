@@ -6,7 +6,6 @@ export type DiaryEntry = {
   title: string;
   content: string;
   createdAt: string;
-  location?: string;
   sentiment?: { label: string; score: number };
 };
 
@@ -26,15 +25,12 @@ export default function DiaryForm(props: {
 }) {
   const [title, setTitle] = React.useState("");
   const [content, setContent] = React.useState("");
-  const [location, setLocation] = React.useState("");
   const [sentiment, setSentiment] = React.useState<{
     label: string;
     score: number;
   } | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState("");
-  const [showAIChat, setShowAIChat] = React.useState(false);
-  const [aiMessage, setAiMessage] = React.useState("");
   const [recommendations, setRecommendations] = React.useState<any[]>([]);
   const [showRecommendations, setShowRecommendations] = React.useState(false);
 
@@ -310,7 +306,6 @@ export default function DiaryForm(props: {
         title,
         content,
         createdAt: new Date().toISOString(),
-        location: location || undefined,
         sentiment: sentiment || undefined,
       };
       const ipfs = await uploadJsonToIpfs(entry);
@@ -331,58 +326,7 @@ export default function DiaryForm(props: {
         <h3 className="text-2xl font-bold text-gray-800">
           Write Today's Story
         </h3>
-        <button
-          onClick={() => setShowAIChat(!showAIChat)}
-          className="px-4 py-2 bg-gradient-to-r from-lavender to-sky-blue text-white rounded-xl hover:shadow-lg transition-all duration-200 flex items-center space-x-2"
-        >
-          <span>🤖</span>
-          <span>AI Companion</span>
-        </button>
       </div>
-
-      {/* AI Chat Panel */}
-      {showAIChat && (
-        <div className="bg-gradient-to-r from-lavender/10 to-sky-blue/10 rounded-xl p-4 border border-lavender/20">
-          <div className="flex items-center space-x-3 mb-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-lavender to-sky-blue rounded-full flex items-center justify-center">
-              <span className="text-white text-sm">🤖</span>
-            </div>
-            <h4 className="font-semibold text-gray-800">
-              AI Writing Assistant
-            </h4>
-          </div>
-          <div className="bg-white/60 rounded-lg p-3 mb-3">
-            <p className="text-gray-700 text-sm">
-              {aiMessage ||
-                "I'm here to help you reflect on your day. What's on your mind? I can help you organize your thoughts or suggest writing prompts."}
-            </p>
-          </div>
-          <div className="flex space-x-2">
-            <input
-              type="text"
-              placeholder="Ask me anything about your mood or writing..."
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lavender text-sm"
-              onKeyPress={(e) => {
-                if (e.key === "Enter") {
-                  setAiMessage(
-                    "Thanks for sharing! I can see you're working through some thoughts. Try writing about what made you feel this way today."
-                  );
-                }
-              }}
-            />
-            <button
-              className="px-4 py-2 bg-gradient-to-r from-lavender to-sky-blue text-white rounded-lg hover:shadow-lg transition-all duration-200 text-sm"
-              onClick={() =>
-                setAiMessage(
-                  "Thanks for sharing! I can see you're working through some thoughts. Try writing about what made you feel this way today."
-                )
-              }
-            >
-              Send
-            </button>
-          </div>
-        </div>
-      )}
 
       <div className="space-y-4">
         <input
@@ -397,13 +341,6 @@ export default function DiaryForm(props: {
           placeholder="How are you feeling today? What happened? What are you grateful for? Share your thoughts freely..."
           value={content}
           onChange={(e) => setContent(e.target.value)}
-        />
-
-        <input
-          className="w-full border border-gray-300 bg-white text-gray-800 placeholder-gray-500 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-lavender"
-          placeholder="📍 Where are you writing from? (optional)"
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
         />
       </div>
 
