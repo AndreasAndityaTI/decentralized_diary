@@ -30,6 +30,7 @@ export default function DiaryForm(props: {
     score: number;
   } | null>(null);
   const [loading, setLoading] = React.useState(false);
+  const [analyzing, setAnalyzing] = React.useState(false);
   const [error, setError] = React.useState("");
   const [recommendations, setRecommendations] = React.useState<any[]>([]);
   const [showRecommendations, setShowRecommendations] = React.useState(false);
@@ -37,7 +38,7 @@ export default function DiaryForm(props: {
   const analyze = async () => {
     try {
       setError("");
-      setLoading(true);
+      setAnalyzing(true);
       const res = await classifySentiment(content || title);
       setSentiment(res);
       generateRecommendations(res, content);
@@ -47,7 +48,7 @@ export default function DiaryForm(props: {
           "Sorry, I couldn't understand your feelings right now. Please try again."
       );
     } finally {
-      setLoading(false);
+      setAnalyzing(false);
     }
   };
 
@@ -348,10 +349,12 @@ export default function DiaryForm(props: {
       <div className="flex items-center justify-between">
         <button
           onClick={analyze}
-          disabled={loading || !content.trim()}
+          disabled={analyzing || !content.trim()}
           className="px-6 py-3 rounded-xl bg-gradient-to-r from-mint-green to-soft-yellow text-gray-800 hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
         >
-          {loading ? "Understanding your feelings..." : "💭 How am I feeling?"}
+          {analyzing
+            ? "Understanding your feelings..."
+            : "💭 How am I feeling?"}
         </button>
 
         {sentiment && (
@@ -374,10 +377,10 @@ export default function DiaryForm(props: {
       <div className="flex justify-end">
         <button
           onClick={publish}
-          disabled={loading || !title.trim() || !content.trim()}
+          disabled={loading || analyzing || !title.trim() || !content.trim()}
           className="px-8 py-3 rounded-xl bg-gradient-to-r from-lavender to-sky-blue text-white hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-lg"
         >
-          {loading ? "Saving your story..." : "💾 Save My Entry"}
+          {loading ? "Saving your story..." : "📖 Save My Story"}
         </button>
       </div>
 
