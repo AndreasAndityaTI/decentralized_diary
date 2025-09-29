@@ -1,34 +1,38 @@
 import React from "react";
 import { classifySentiment } from "../services/sentiment";
-import { uploadJsonToIpfs } from "../services/ipfs";
+import { uploadJsonToIpfs, extractDiaryMetadata } from "../services/ipfs";
 
 export type DiaryEntry = {
   title: string;
   content: string;
   createdAt: string;
-  sentiment?: { label: string; score: number };
+  mood?: string;
 };
 
 const moodEmojis = {
   happy: "😊",
   sad: "😢",
+  angry: "😠",
+  neutral: "😐",
+  // Additional moods that might be returned
   anxious: "😰",
   motivated: "💪",
   calm: "😌",
   excited: "🤩",
   frustrated: "😤",
   grateful: "🙏",
+  joy: "😊",
+  sadness: "😢",
+  anger: "😠",
 };
 
 export default function DiaryForm(props: {
   onPublished: (entry: DiaryEntry, ipfsCid: string) => void;
+  walletAddress?: string;
 }) {
   const [title, setTitle] = React.useState("");
   const [content, setContent] = React.useState("");
-  const [sentiment, setSentiment] = React.useState<{
-    label: string;
-    score: number;
-  } | null>(null);
+  const [mood, setMood] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [analyzing, setAnalyzing] = React.useState(false);
   const [error, setError] = React.useState("");
@@ -40,8 +44,8 @@ export default function DiaryForm(props: {
       setError("");
       setAnalyzing(true);
       const res = await classifySentiment(content || title);
-      setSentiment(res);
-      generateRecommendations(res, content);
+      setMood(res.label);
+      generateRecommendations({ label: res.label, score: res.score }, content);
     } catch (e: any) {
       setError(
         e?.message ||
@@ -307,9 +311,19 @@ export default function DiaryForm(props: {
         title,
         content,
         createdAt: new Date().toISOString(),
-        sentiment: sentiment || undefined,
+        mood: mood || undefined,
       };
-      const ipfs = await uploadJsonToIpfs(entry);
+
+      // Extract metadata for Pinata
+      const metadata = extractDiaryMetadata(entry, props.walletAddress);
+      const ipfs = await uploadJsonToIpfs(entry, metadata);
+
+      console.log("📝 Diary entry saved to IPFS:", {
+        cid: ipfs.cid,
+        metadata: ipfs.pinataMetadata,
+        url: ipfs.url,
+      });
+
       props.onPublished(entry, ipfs.cid);
     } catch (e: any) {
       setError(
@@ -357,17 +371,14 @@ export default function DiaryForm(props: {
             : "💭 How am I feeling?"}
         </button>
 
-        {sentiment && (
+        {mood && (
           <div className="flex items-center space-x-3 bg-gradient-to-r from-lavender/20 to-sky-blue/20 rounded-xl p-3">
             <span className="text-2xl">
-              {moodEmojis[sentiment.label as keyof typeof moodEmojis] || "😊"}
+              {moodEmojis[mood as keyof typeof moodEmojis] || "😊"}
             </span>
             <div>
               <div className="font-semibold text-gray-800 capitalize">
-                {sentiment.label}
-              </div>
-              <div className="text-sm text-gray-600">
-                {(sentiment.score * 100).toFixed(1)}% confidence
+                {mood}
               </div>
             </div>
           </div>

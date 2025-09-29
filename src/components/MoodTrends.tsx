@@ -8,12 +8,18 @@ interface MoodTrendsProps {
 const moodEmojis = {
   happy: "😊",
   sad: "😢",
+  angry: "😠",
+  neutral: "😐",
+  // Additional moods that might be returned
   anxious: "😰",
   motivated: "💪",
   calm: "😌",
   excited: "🤩",
   frustrated: "😤",
   grateful: "🙏",
+  joy: "😊",
+  sadness: "😢",
+  anger: "😠",
 };
 
 const moodColors = {
@@ -71,7 +77,7 @@ export default function MoodTrends({ entries }: MoodTrendsProps) {
   const getMoodDistribution = () => {
     const moodCounts: { [key: string]: number } = {};
     entries.forEach(({ entry }) => {
-      const mood = entry.sentiment?.label || "unknown";
+      const mood = entry.mood || "unknown";
       moodCounts[mood] = (moodCounts[mood] || 0) + 1;
     });
     return moodCounts;
@@ -96,7 +102,7 @@ export default function MoodTrends({ entries }: MoodTrendsProps) {
     weeklyEntries.forEach(({ entry }) => {
       const dateStr = new Date(entry.createdAt).toDateString();
       if (dailyMoods[dateStr]) {
-        dailyMoods[dateStr].push(entry.sentiment?.label || "unknown");
+        dailyMoods[dateStr].push(entry.mood || "unknown");
       }
     });
 
@@ -270,7 +276,7 @@ export default function MoodTrends({ entries }: MoodTrendsProps) {
                   const entryDate = new Date(entry.createdAt);
                   return entryDate.toDateString() === dateStr;
                 })
-                .map(({ entry }) => entry.sentiment?.label || "unknown");
+                .map(({ entry }) => entry.mood || "unknown");
 
               const mostCommonMood =
                 dayMoods.length > 0

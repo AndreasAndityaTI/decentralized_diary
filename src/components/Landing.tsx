@@ -2,7 +2,7 @@ import React from "react";
 import WalletConnect from "./WalletConnect";
 
 interface LandingProps {
-  onConnected: () => void;
+  onConnected: (walletAddress: string) => void;
 }
 
 export default function Landing({ onConnected }: LandingProps) {
@@ -55,7 +55,9 @@ export default function Landing({ onConnected }: LandingProps) {
 
         {/* CTA Section */}
         <div className="space-y-4">
-          <WalletConnect onConnected={() => onConnected()} />
+          <WalletConnect
+            onConnected={(api, info) => onConnected(info.address)}
+          />
           <p className="text-sm text-gray-500">
             Connect your Cardano wallet to start your decentralized journaling
             journey

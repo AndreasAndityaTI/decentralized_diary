@@ -3,31 +3,49 @@ import { DiaryEntry } from "./DiaryForm";
 
 interface JournalLogsProps {
   entries: Array<{ entry: DiaryEntry; cid: string }>;
+  loading?: boolean;
+  onRefresh?: () => void;
 }
 
 const moodEmojis = {
   happy: "😊",
   sad: "😢",
+  angry: "😠",
+  neutral: "😐",
+  // Additional moods that might be returned
   anxious: "😰",
   motivated: "💪",
   calm: "😌",
   excited: "🤩",
   frustrated: "😤",
   grateful: "🙏",
+  joy: "😊",
+  sadness: "😢",
+  anger: "😠",
 };
 
 const moodColors = {
   happy: "from-yellow-200 to-yellow-300",
   sad: "from-blue-200 to-blue-300",
+  angry: "from-red-200 to-red-300",
+  neutral: "from-gray-200 to-gray-300",
+  // Additional moods that might be returned
   anxious: "from-red-200 to-red-300",
   motivated: "from-green-200 to-green-300",
   calm: "from-purple-200 to-purple-300",
   excited: "from-pink-200 to-pink-300",
   frustrated: "from-orange-200 to-orange-300",
   grateful: "from-emerald-200 to-emerald-300",
+  joy: "from-yellow-200 to-yellow-300",
+  sadness: "from-blue-200 to-blue-300",
+  anger: "from-red-200 to-red-300",
 };
 
-export default function JournalLogs({ entries }: JournalLogsProps) {
+export default function JournalLogs({
+  entries,
+  loading = false,
+  onRefresh,
+}: JournalLogsProps) {
   const [selectedEntry, setSelectedEntry] = useState<{
     entry: DiaryEntry;
     cid: string;
@@ -38,11 +56,40 @@ export default function JournalLogs({ entries }: JournalLogsProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-800">Journal Logs</h1>
+        {onRefresh && (
+          <button
+            onClick={onRefresh}
+            disabled={loading}
+            className="px-4 py-2 bg-lavender text-white rounded-lg hover:bg-lavender/80 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+          >
+            {loading ? (
+              <>
+                <span>🔄</span>
+                <span>Loading from IPFS...</span>
+              </>
+            ) : (
+              <>
+                <span>🔄</span>
+                <span>Refresh from IPFS</span>
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Timeline */}
       <div className="space-y-4">
-        {entries.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">🔄</div>
+            <h3 className="text-xl font-semibold text-gray-600 mb-2">
+              Loading entries from IPFS...
+            </h3>
+            <p className="text-gray-500">
+              Fetching your journal data from decentralized storage
+            </p>
+          </div>
+        ) : entries.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">📝</div>
             <h3 className="text-xl font-semibold text-gray-600 mb-2">
@@ -64,9 +111,8 @@ export default function JournalLogs({ entries }: JournalLogsProps) {
                   {/* Timeline dot */}
                   <div
                     className={`w-4 h-4 rounded-full bg-gradient-to-r ${
-                      moodColors[
-                        entry.sentiment?.label as keyof typeof moodColors
-                      ] || "from-gray-200 to-gray-300"
+                      moodColors[entry.mood as keyof typeof moodColors] ||
+                      "from-gray-200 to-gray-300"
                     } mt-2 flex-shrink-0`}
                   />
 
@@ -78,9 +124,8 @@ export default function JournalLogs({ entries }: JournalLogsProps) {
                       </h3>
                       <div className="flex items-center space-x-2">
                         <span className="text-2xl">
-                          {moodEmojis[
-                            entry.sentiment?.label as keyof typeof moodEmojis
-                          ] || "😊"}
+                          {moodEmojis[entry.mood as keyof typeof moodEmojis] ||
+                            "😊"}
                         </span>
                         <span className="text-sm text-gray-500">
                           {new Date(entry.createdAt).toLocaleDateString()}
@@ -96,13 +141,11 @@ export default function JournalLogs({ entries }: JournalLogsProps) {
                     <div className="flex flex-wrap gap-2 mb-3">
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${
-                          moodColors[
-                            entry.sentiment?.label as keyof typeof moodColors
-                          ] || "from-gray-200 to-gray-300"
+                          moodColors[entry.mood as keyof typeof moodColors] ||
+                          "from-gray-200 to-gray-300"
                         } text-gray-700`}
                       >
-                        {entry.sentiment?.label} (
-                        {(entry.sentiment?.score! * 100).toFixed(1)}%)
+                        {entry.mood}
                       </span>
                       {entry.location && (
                         <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
@@ -111,17 +154,7 @@ export default function JournalLogs({ entries }: JournalLogsProps) {
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between">
-                      <a
-                        href={`https://ipfs.io/ipfs/${cid}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-sm text-lavender hover:underline flex items-center space-x-1"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <span>🔒</span>
-                        <span>View on IPFS</span>
-                      </a>
+                    <div className="flex items-center justify-end">
                       <span className="text-xs text-gray-400">
                         {new Date(entry.createdAt).toLocaleTimeString()}
                       </span>
@@ -154,14 +187,12 @@ export default function JournalLogs({ entries }: JournalLogsProps) {
               <div className="flex items-center space-x-4 mb-6">
                 <span className="text-4xl">
                   {moodEmojis[
-                    selectedEntry.entry.sentiment
-                      ?.label as keyof typeof moodEmojis
+                    selectedEntry.entry.mood as keyof typeof moodEmojis
                   ] || "😊"}
                 </span>
                 <div>
                   <p className="text-lg font-semibold text-gray-800">
-                    {selectedEntry.entry.sentiment?.label} (
-                    {(selectedEntry.entry.sentiment?.score! * 100).toFixed(1)}%)
+                    {selectedEntry.entry.mood}
                   </p>
                   <p className="text-gray-600">
                     {new Date(selectedEntry.entry.createdAt).toLocaleString()}
@@ -173,18 +204,6 @@ export default function JournalLogs({ entries }: JournalLogsProps) {
                 <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
                   {selectedEntry.entry.content}
                 </p>
-              </div>
-
-              <div className="mt-6 pt-4 border-t border-gray-200">
-                <a
-                  href={`https://ipfs.io/ipfs/${selectedEntry.cid}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center space-x-2 text-lavender hover:underline"
-                >
-                  <span>🔒</span>
-                  <span>View on IPFS</span>
-                </a>
               </div>
             </div>
           </div>

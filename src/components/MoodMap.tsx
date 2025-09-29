@@ -16,6 +16,16 @@ const moodEmojis = {
   sad: "😢",
   angry: "😠",
   neutral: "😐",
+  // Additional moods that might be returned
+  anxious: "😰",
+  motivated: "💪",
+  calm: "😌",
+  excited: "🤩",
+  frustrated: "😤",
+  grateful: "🙏",
+  joy: "😊",
+  sadness: "😢",
+  anger: "😠",
 };
 
 const moodColors = {
@@ -72,9 +82,6 @@ export default function MoodMap({ entries }: MoodMapProps) {
                   </div>
                   <div className="font-semibold text-gray-800 capitalize">
                     {mood}
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    {percentage.toFixed(1)}%
                   </div>
                 </div>
               </div>
@@ -136,7 +143,7 @@ export default function MoodMap({ entries }: MoodMapProps) {
                 {
                   Object.entries(
                     entries.reduce((acc, { entry }) => {
-                      const mood = entry.sentiment?.label || "unknown";
+                      const mood = entry.mood || "unknown";
                       acc[mood] = (acc[mood] || 0) + 1;
                       return acc;
                     }, {} as { [key: string]: number })
