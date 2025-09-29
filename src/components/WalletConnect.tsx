@@ -14,7 +14,10 @@ export default function WalletConnect(props: {
       setError("");
       setLoading(true);
 
-      console.log("Attempting wallet connection...");
+      console.log("🔍 Attempting wallet connection...");
+      console.log(
+        "🔍 WalletConnect component mounted and connect function called"
+      );
 
       // Try multiple times with different approaches
       let w = null;
@@ -51,6 +54,7 @@ export default function WalletConnect(props: {
 
       console.log("Getting wallet info...");
       const i = await getWalletInfo(w);
+      console.log("🔍 Wallet info received:", i);
 
       if (i.networkId !== 0) {
         setError("Please switch wallet to Preprod/Preview testnet.");
@@ -60,6 +64,7 @@ export default function WalletConnect(props: {
       setApi(w);
       setInfo(i);
       console.log("Wallet connection successful, calling onConnected...");
+      console.log("🔍 Calling onConnected with wallet info:", i);
       // Call the parent callback immediately to trigger redirect
       props.onConnected(w, i);
     } catch (e: any) {

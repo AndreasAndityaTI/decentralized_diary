@@ -179,6 +179,7 @@ export default function App() {
   const handleWalletConnected = (address: string) => {
     console.log("Wallet connected, redirecting to dashboard...");
     console.log("Wallet address:", address);
+    console.log("Setting wallet address state...");
     setWalletAddress(address);
     setConnected(true);
   };
@@ -187,6 +188,11 @@ export default function App() {
   React.useEffect(() => {
     console.log("Connected state changed:", connected);
   }, [connected]);
+
+  // Debug: Track wallet address changes
+  React.useEffect(() => {
+    console.log("Wallet address changed:", walletAddress);
+  }, [walletAddress]);
 
   if (!connected) {
     return <Landing onConnected={handleWalletConnected} />;

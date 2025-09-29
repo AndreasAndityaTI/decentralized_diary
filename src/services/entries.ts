@@ -94,10 +94,29 @@ export async function fetchAllEntriesLive(
           `🔄 Found ${cids.length} CIDs in localStorage, fetching from IPFS...`
         );
         const fallbackEntries = await fetchEntriesFromIpfs(cids);
-        console.log(
-          `✅ Fallback - Successfully fetched ${fallbackEntries.length} entries from localStorage CIDs`
-        );
-        return fallbackEntries;
+
+        // Filter by wallet address if provided
+        if (walletAddress && walletAddress !== "") {
+          console.log(
+            `🔍 Filtering fallback entries by wallet: ${walletAddress}`
+          );
+          const filteredEntries = fallbackEntries.filter(({ entry }) => {
+            // Check if entry has wallet address that matches current wallet
+            const entryWallet = entry.walletAddress || "unknown";
+            const matches = entryWallet === walletAddress;
+            console.log(`🔍 Entry wallet: ${entryWallet}, matches: ${matches}`);
+            return matches;
+          });
+          console.log(
+            `✅ Fallback - Successfully fetched ${filteredEntries.length} wallet-specific entries from localStorage CIDs`
+          );
+          return filteredEntries;
+        } else {
+          console.log(
+            `✅ Fallback - Successfully fetched ${fallbackEntries.length} entries from localStorage CIDs`
+          );
+          return fallbackEntries;
+        }
       } else {
         console.log("⚠️ No CIDs found in localStorage either");
         return [];
@@ -115,10 +134,29 @@ export async function fetchAllEntriesLive(
           `🔄 Found ${cids.length} CIDs in localStorage, fetching from IPFS...`
         );
         const fallbackEntries = await fetchEntriesFromIpfs(cids);
-        console.log(
-          `✅ Fallback - Successfully fetched ${fallbackEntries.length} entries from localStorage CIDs`
-        );
-        return fallbackEntries;
+
+        // Filter by wallet address if provided
+        if (walletAddress && walletAddress !== "") {
+          console.log(
+            `🔍 Filtering error fallback entries by wallet: ${walletAddress}`
+          );
+          const filteredEntries = fallbackEntries.filter(({ entry }) => {
+            // Check if entry has wallet address that matches current wallet
+            const entryWallet = entry.walletAddress || "unknown";
+            const matches = entryWallet === walletAddress;
+            console.log(`🔍 Entry wallet: ${entryWallet}, matches: ${matches}`);
+            return matches;
+          });
+          console.log(
+            `✅ Error Fallback - Successfully fetched ${filteredEntries.length} wallet-specific entries from localStorage CIDs`
+          );
+          return filteredEntries;
+        } else {
+          console.log(
+            `✅ Error Fallback - Successfully fetched ${fallbackEntries.length} entries from localStorage CIDs`
+          );
+          return fallbackEntries;
+        }
       }
     } catch (fallbackError) {
       console.error("❌ Fallback method also failed:", fallbackError);

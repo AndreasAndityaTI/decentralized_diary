@@ -34,6 +34,7 @@ export default function Dashboard({
   onRefresh,
   walletAddress,
 }: DashboardProps) {
+  console.log("🔍 Dashboard received walletAddress:", walletAddress);
   const todayEntry = entries.find(({ entry }) => {
     const today = new Date().toDateString();
     return new Date(entry.createdAt).toDateString() === today;

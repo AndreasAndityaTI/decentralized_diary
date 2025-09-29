@@ -7,6 +7,7 @@ export type DiaryEntry = {
   content: string;
   createdAt: string;
   mood?: string;
+  walletAddress?: string;
 };
 
 const moodEmojis = {
@@ -312,10 +313,13 @@ export default function DiaryForm(props: {
         content,
         createdAt: new Date().toISOString(),
         mood: mood || undefined,
+        walletAddress: props.walletAddress,
       };
 
       // Extract metadata for Pinata
+      console.log("🔍 DiaryForm - walletAddress prop:", props.walletAddress);
       const metadata = extractDiaryMetadata(entry, props.walletAddress);
+      console.log("🔍 DiaryForm - extracted metadata:", metadata);
       const ipfs = await uploadJsonToIpfs(entry, metadata);
 
       console.log("📝 Diary entry saved to IPFS:", {

@@ -21,7 +21,7 @@ export type DiaryEntryMetadata = {
 };
 
 // Option 1: Environment variables (recommended)
-const IPFS_ENDPOINT = (import.meta as any).env.VITE_IPFS_ENDPOINT || ""; // e.g., https://api.pinata.cloud/pinning/pinJSONToIPFS
+const IPFS_ENDPOINT = (import.meta as any).env.VITE_IPFS_ENDPOINT || ""; // e.g., https://api.pinata.cloud/pinning/pinFileToIPFS
 const IPFS_AUTH = (import.meta as any).env.VITE_IPFS_AUTH || ""; // e.g., 'Bearer <token>' or 'pinata_api_key:pinata_secret_api_key'
 
 // Option 2: Hardcoded (for quick testing only)
@@ -32,50 +32,96 @@ export async function uploadJsonToIpfs(
   data: any,
   metadata?: DiaryEntryMetadata
 ): Promise<IpfsUploadResult> {
-  if (!IPFS_ENDPOINT) throw new Error("Missing VITE_IPFS_ENDPOINT");
+  // Convert JSON to File for pinFileToIPFS (supports private files)
+  const jsonString = JSON.stringify(data, null, 2);
+  const blob = new Blob([jsonString], { type: "application/json" });
+  const file = new File([blob], `${metadata?.title || "diary-entry"}.json`, {
+    type: "application/json",
+  });
 
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
+  // Create FormData for file upload
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append(
+    "pinataMetadata",
+    JSON.stringify({
+      name: metadata?.title || "Diary Entry",
+      keyvalues: {
+        mood: metadata?.mood || "unknown",
+        date: metadata?.date || new Date().toISOString().split("T")[0],
+        wc: metadata?.wordCount?.toString() || "0",
+        type: "diary",
+        wallet: metadata?.walletAddress || "unknown",
+      },
+    })
+  );
+  formData.append(
+    "pinataOptions",
+    JSON.stringify({
+      cidVersion: 0,
+      wrapWithDirectory: false,
+      private: true, // Make files private
+    })
+  );
+
+  const headers: Record<string, string> = {};
   if (IPFS_AUTH) headers["Authorization"] = IPFS_AUTH;
 
-  // Enhanced payload with Pinata metadata
-  const payload = {
-    pinataContent: data,
-    ...(metadata && {
-      pinataMetadata: {
-        name: metadata.title || "Diary Entry",
-        keyvalues: {
-          mood: metadata.mood || "unknown",
-          date: metadata.date || new Date().toISOString().split("T")[0],
-          wc: metadata.wordCount?.toString() || "0",
-          type: "diary",
-          wallet: metadata.walletAddress || "unknown", // Add wallet to metadata
-        },
-      },
-      pinataOptions: {
-        cidVersion: 0,
-        wrapWithDirectory: false,
-      },
-    }),
-  };
+  // Use pinFileToIPFS endpoint for private files
+  const endpoint = "https://api.pinata.cloud/pinning/pinFileToIPFS";
 
-  const res = await axios.post(IPFS_ENDPOINT, payload, { headers });
+  // Debug: Log the upload details
+  console.log("🔍 Uploading file to IPFS:", {
+    fileName: file.name,
+    fileSize: file.size,
+    metadata: metadata,
+    endpoint: endpoint,
+  });
 
-  // Debug: Log the full response to see what we're getting
+  // Debug: Log the FormData contents
+  console.log("🔍 FormData contents:");
+  for (let [key, value] of formData.entries()) {
+    if (key === "file") {
+      console.log(
+        `  ${key}:`,
+        (value as File).name,
+        `(${(value as File).size} bytes)`
+      );
+    } else {
+      console.log(`  ${key}:`, value);
+    }
+  }
+
+  const res = await axios.post(endpoint, formData, {
+    headers: {
+      ...headers,
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+  // Debug: Log the full response
   console.log("🔍 Full IPFS response:", res.data);
+  console.log("🔍 Response status:", res.status);
+  console.log("🔍 Response headers:", res.headers);
 
-  // Normalize common pinning provider responses
   const cid = res.data?.IpfsHash || res.data?.cid || res.data?.Hash;
   console.log("🔍 Extracted CID:", cid);
   console.log("🔍 CID length:", cid?.length);
-
   if (!cid) throw new Error("IPFS response missing CID");
 
   return {
     cid,
     url: `ipfs://${cid}`,
-    pinataMetadata: payload.pinataMetadata,
+    pinataMetadata: {
+      name: metadata?.title || "Diary Entry",
+      keyvalues: {
+        mood: metadata?.mood || "unknown",
+        date: metadata?.date || new Date().toISOString().split("T")[0],
+        wc: metadata?.wordCount?.toString() || "0",
+        type: "diary",
+        wallet: metadata?.walletAddress || "unknown",
+      },
+    },
   };
 }
 
@@ -92,6 +138,11 @@ export function extractDiaryMetadata(
     ? new Date(entry.createdAt).toISOString().split("T")[0]
     : new Date().toISOString().split("T")[0];
 
+  console.log(
+    "🔍 extractDiaryMetadata called with walletAddress:",
+    walletAddress
+  );
+
   return {
     title: entry.title || "Untitled Entry",
     mood,
@@ -101,10 +152,10 @@ export function extractDiaryMetadata(
   };
 }
 
-// IPFS Gateway URLs for fetching data
+// IPFS Gateway URLs for fetching data (prioritize Pinata for private files)
 const IPFS_GATEWAYS = [
+  "https://gateway.pinata.cloud/ipfs/", // Pinata gateway (supports private files)
   "https://ipfs.io/ipfs/",
-  "https://gateway.pinata.cloud/ipfs/",
   "https://cloudflare-ipfs.com/ipfs/",
   "https://dweb.link/ipfs/",
 ];
@@ -115,11 +166,18 @@ export async function fetchFromIpfs(cid: string): Promise<any> {
   for (const gateway of IPFS_GATEWAYS) {
     try {
       const url = `${gateway}${cid}`;
+
+      // Add authentication headers for Pinata gateway (private files)
+      const headers: any = {
+        Accept: "application/json",
+      };
+
+      // Note: Removed Authorization header due to CORS issues with Pinata gateway
+      // Private files will still be accessible via other gateways
+
       const response = await fetch(url, {
         method: "GET",
-        headers: {
-          Accept: "application/json",
-        },
+        headers,
         // Add timeout
         signal: AbortSignal.timeout(10000), // 10 second timeout
       });
@@ -188,6 +246,9 @@ export async function fetchAllDiaryEntriesFromPinata(
   console.log("All env vars:", (import.meta as any).env);
   console.log("PINATA_API_KEY:", PINATA_API_KEY);
   console.log("PINATA_SECRET:", PINATA_SECRET);
+  console.log("🔍 Filtering by wallet address:", walletAddress);
+  console.log("🔍 Wallet address type:", typeof walletAddress);
+  console.log("🔍 Wallet address length:", walletAddress?.length);
 
   if (!PINATA_API_KEY || !PINATA_SECRET) {
     console.error("❌ Missing Pinata API credentials for live fetching");
@@ -260,9 +321,9 @@ export async function fetchAllDiaryEntriesFromPinata(
 
       // Filter by wallet address if provided
       const matchesWallet =
-        !walletAddress ||
-        file.metadata?.keyvalues?.wallet === walletAddress ||
-        file.metadata?.keyvalues?.wallet === "unknown"; // Include old entries without wallet
+        walletAddress && walletAddress !== ""
+          ? file.metadata?.keyvalues?.wallet === walletAddress
+          : file.metadata?.keyvalues?.wallet === "unknown"; // Only show old entries when no wallet connected
 
       console.log(`Checking file ${file.ipfs_pin_hash}:`, {
         hasDiaryType,

@@ -56,7 +56,13 @@ export default function Landing({ onConnected }: LandingProps) {
         {/* CTA Section */}
         <div className="space-y-4">
           <WalletConnect
-            onConnected={(api, info) => onConnected(info.address)}
+            onConnected={(api, info) => {
+              console.log("🔍 Wallet info received:", info);
+              // Get the first used address or change address
+              const walletAddress = info.used?.[0] || info.change;
+              console.log("🔍 Extracted wallet address:", walletAddress);
+              onConnected(walletAddress);
+            }}
           />
           <p className="text-sm text-gray-500">
             Connect your Cardano wallet to start your decentralized journaling
