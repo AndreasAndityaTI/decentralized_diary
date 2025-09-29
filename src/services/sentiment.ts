@@ -53,11 +53,11 @@ Sentiment:`
     let label = labelMap[modelLabel] || 'neutral' // Default to neutral for other emotions
 
     // Add intensity to the label based on the score
-    if (score > 0.8) {
-      if (label === 'happy') label = 'very happy'
-      if (label === 'sad') label = 'very sad'
-      if (label === 'angry') label = 'very angry'
-    }
+    // if (score > 0.8) {
+    //   if (label === 'happy') label = 'very happy'
+    //   if (label === 'sad') label = 'very sad'
+    //   if (label === 'angry') label = 'very angry'
+    // }
 
     return { label, score }
   } catch (err: any) {
