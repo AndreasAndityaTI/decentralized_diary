@@ -8,12 +8,18 @@ interface MoodTrendsProps {
 const moodEmojis = {
   happy: "😊",
   sad: "😢",
+  angry: "😠",
+  neutral: "😐",
+  // Additional moods that might be returned
   anxious: "😰",
   motivated: "💪",
   calm: "😌",
   excited: "🤩",
   frustrated: "😤",
   grateful: "🙏",
+  joy: "😊",
+  sadness: "😢",
+  anger: "😠",
 };
 
 const moodColors = {
@@ -29,6 +35,8 @@ const moodColors = {
 
 export default function MoodTrends({ entries }: MoodTrendsProps) {
   const [timeRange, setTimeRange] = useState("week");
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   // Calculate streak
   const calculateStreak = () => {
@@ -69,7 +77,7 @@ export default function MoodTrends({ entries }: MoodTrendsProps) {
   const getMoodDistribution = () => {
     const moodCounts: { [key: string]: number } = {};
     entries.forEach(({ entry }) => {
-      const mood = entry.sentiment?.label || "unknown";
+      const mood = entry.mood || "unknown";
       moodCounts[mood] = (moodCounts[mood] || 0) + 1;
     });
     return moodCounts;
@@ -94,7 +102,7 @@ export default function MoodTrends({ entries }: MoodTrendsProps) {
     weeklyEntries.forEach(({ entry }) => {
       const dateStr = new Date(entry.createdAt).toDateString();
       if (dailyMoods[dateStr]) {
-        dailyMoods[dateStr].push(entry.sentiment?.label || "unknown");
+        dailyMoods[dateStr].push(entry.mood || "unknown");
       }
     });
 
@@ -159,82 +167,120 @@ export default function MoodTrends({ entries }: MoodTrendsProps) {
 
         <div className="bg-gradient-to-r from-soft-yellow to-mint-green rounded-2xl p-6 shadow-lg">
           <div className="flex items-center space-x-3">
-            <div className="text-3xl">⭐</div>
+            <div className="text-3xl">📅</div>
             <div>
               <h3 className="text-2xl font-bold text-gray-800">
-                {totalEntries > 0
-                  ? Math.round(
-                      (Object.values(moodDistribution).reduce(
-                        (a, b) => a + b,
-                        0
-                      ) /
-                        totalEntries) *
-                        100
-                    )
-                  : 0}
-                %
+                {Math.floor(totalEntries / 7)}
               </h3>
-              <p className="text-gray-600">Mood Score</p>
+              <p className="text-gray-600">Weeks Active</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Mood Distribution Chart */}
+      {/* Mood Calendar */}
       <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200">
-        <h3 className="text-xl font-semibold text-gray-800 mb-4">
-          Mood Distribution
-        </h3>
-        <div className="space-y-3">
-          {Object.entries(moodDistribution).map(([mood, count]) => {
-            const percentage =
-              totalEntries > 0 ? (count / totalEntries) * 100 : 0;
-            return (
-              <div key={mood} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-lg">
-                      {moodEmojis[mood as keyof typeof moodEmojis] || "😊"}
-                    </span>
-                    <span className="font-medium text-gray-700 capitalize">
-                      {mood}
-                    </span>
-                  </div>
-                  <span className="text-sm text-gray-500">
-                    {count} entries ({percentage.toFixed(1)}%)
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="h-2 rounded-full transition-all duration-500"
-                    style={{
-                      width: `${percentage}%`,
-                      backgroundColor:
-                        moodColors[mood as keyof typeof moodColors] || "#gray",
-                    }}
-                  />
-                </div>
-              </div>
-            );
-          })}
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-semibold text-gray-800">Mood Calendar</h3>
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => {
+                if (selectedMonth === 0) {
+                  setSelectedMonth(11);
+                  setSelectedYear(selectedYear - 1);
+                } else {
+                  setSelectedMonth(selectedMonth - 1);
+                }
+              }}
+              className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+            </button>
+            <div className="text-lg font-semibold text-gray-800 min-w-[120px] text-center">
+              {new Date(selectedYear, selectedMonth).toLocaleDateString("en", {
+                month: "long",
+                year: "numeric",
+              })}
+            </div>
+            <button
+              onClick={() => {
+                if (selectedMonth === 11) {
+                  setSelectedMonth(0);
+                  setSelectedYear(selectedYear + 1);
+                } else {
+                  setSelectedMonth(selectedMonth + 1);
+                }
+              }}
+              className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
-      </div>
+        <div className="grid grid-cols-7 gap-1">
+          {/* Calendar Header */}
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+            <div
+              key={day}
+              className="text-center text-sm font-semibold text-gray-600 py-2"
+            >
+              {day}
+            </div>
+          ))}
 
-      {/* Weekly Mood Chart */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200">
-        <h3 className="text-xl font-semibold text-gray-800 mb-4">
-          7-Day Mood Overview
-        </h3>
-        <div className="grid grid-cols-7 gap-2">
-          {Object.entries(weeklyData)
-            .reverse()
-            .map(([date, moods]) => {
-              const dayName = new Date(date).toLocaleDateString("en", {
-                weekday: "short",
-              });
+          {/* Calendar Days */}
+          {(() => {
+            const today = new Date();
+            const firstDay = new Date(selectedYear, selectedMonth, 1);
+            const lastDay = new Date(selectedYear, selectedMonth + 1, 0);
+            const startDate = new Date(firstDay);
+            startDate.setDate(startDate.getDate() - firstDay.getDay());
+
+            const calendarDays = [];
+            const currentDate = new Date(startDate);
+
+            // Generate 6 weeks (42 days) to fill the calendar
+            for (let i = 0; i < 42; i++) {
+              const dateStr = currentDate.toDateString();
+              const isCurrentMonth = currentDate.getMonth() === selectedMonth;
+              const isToday =
+                currentDate.toDateString() === today.toDateString();
+
+              // Get moods for this date
+              const dayMoods = entries
+                .filter(({ entry }) => {
+                  const entryDate = new Date(entry.createdAt);
+                  return entryDate.toDateString() === dateStr;
+                })
+                .map(({ entry }) => entry.mood || "unknown");
+
               const mostCommonMood =
-                moods.length > 0
-                  ? moods.reduce((a, b, i, arr) =>
+                dayMoods.length > 0
+                  ? dayMoods.reduce((a, b, i, arr) =>
                       arr.filter((v) => v === a).length >=
                       arr.filter((v) => v === b).length
                         ? a
@@ -242,30 +288,35 @@ export default function MoodTrends({ entries }: MoodTrendsProps) {
                     )
                   : null;
 
-              return (
-                <div key={date} className="text-center">
-                  <div className="text-xs text-gray-500 mb-2">{dayName}</div>
-                  <div
-                    className={`w-12 h-12 rounded-xl flex items-center justify-center mx-auto ${
-                      mostCommonMood
-                        ? "bg-gradient-to-br from-gray-100 to-gray-200"
-                        : "bg-gray-50"
-                    }`}
-                  >
-                    <span className="text-lg">
-                      {mostCommonMood
-                        ? moodEmojis[
-                            mostCommonMood as keyof typeof moodEmojis
-                          ] || "😊"
-                        : "—"}
-                    </span>
+              calendarDays.push(
+                <div
+                  key={dateStr}
+                  className={`text-center p-2 min-h-[3rem] flex flex-col items-center justify-center ${
+                    isCurrentMonth ? "text-gray-800" : "text-gray-400"
+                  } ${isToday ? "bg-blue-100 rounded-lg" : ""}`}
+                >
+                  <div className="text-sm font-medium mb-1">
+                    {currentDate.getDate()}
                   </div>
-                  <div className="text-xs text-gray-400 mt-1">
-                    {moods.length}
+                  <div className="text-lg">
+                    {mostCommonMood
+                      ? moodEmojis[mostCommonMood as keyof typeof moodEmojis] ||
+                        "😊"
+                      : "—"}
                   </div>
+                  {dayMoods.length > 1 && (
+                    <div className="text-xs text-gray-500">
+                      +{dayMoods.length - 1}
+                    </div>
+                  )}
                 </div>
               );
-            })}
+
+              currentDate.setDate(currentDate.getDate() + 1);
+            }
+
+            return calendarDays;
+          })()}
         </div>
       </div>
 

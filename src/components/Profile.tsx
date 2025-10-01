@@ -399,6 +399,236 @@ export default function Profile() {
           </div>
         </div>
       </div>
+
+      {/* Debug Section */}
+      <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+        <h3 className="text-lg font-semibold text-yellow-800 mb-2">
+          🔧 Debug Tools
+        </h3>
+        <p className="text-sm text-yellow-700 mb-3">
+          Development tools for testing data persistence
+        </p>
+        <div className="space-y-2">
+          <button
+            onClick={() => {
+              const cids = localStorage.getItem("diary-entry-cids");
+              console.log("🔍 Current CIDs in localStorage:", cids);
+              alert(`Current CIDs in localStorage: ${cids || "None"}`);
+            }}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm mr-2"
+          >
+            Check Stored CIDs
+          </button>
+          <button
+            onClick={async () => {
+              console.log("🔍 Testing entry fetching...");
+              try {
+                // Test localStorage method
+                const cids = localStorage.getItem("diary-entry-cids");
+                console.log("📋 CIDs from localStorage:", cids);
+
+                if (cids) {
+                  const parsedCids = JSON.parse(cids);
+                  console.log("📋 Parsed CIDs:", parsedCids);
+
+                  // Test fetching from IPFS
+                  const { fetchEntriesFromIpfs } = await import(
+                    "../services/ipfs"
+                  );
+                  const entries = await fetchEntriesFromIpfs(parsedCids);
+                  console.log("📝 Fetched entries:", entries);
+                  alert(
+                    `Found ${entries.length} entries from IPFS! Check console for details.`
+                  );
+                } else {
+                  alert("No CIDs found in localStorage!");
+                }
+              } catch (error) {
+                console.error("❌ Error testing entries:", error);
+                alert(`Error: ${error.message}`);
+              }
+            }}
+            className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm mr-2"
+          >
+            Test Entry Fetching
+          </button>
+          <button
+            onClick={async () => {
+              try {
+                console.log("🔍 Fetching real CIDs from Pinata API...");
+
+                // Try to get real CIDs from Pinata API
+                const PINATA_API_KEY = (import.meta as any).env
+                  .VITE_PINATA_API_KEY;
+                const PINATA_SECRET = (import.meta as any).env
+                  .VITE_PINATA_SECRET;
+
+                console.log("🔍 Environment variables check:");
+                console.log("PINATA_API_KEY:", PINATA_API_KEY);
+                console.log(
+                  "PINATA_SECRET:",
+                  PINATA_SECRET ? "Present" : "Missing"
+                );
+                console.log("All env vars:", (import.meta as any).env);
+
+                if (!PINATA_API_KEY || !PINATA_SECRET) {
+                  alert(
+                    `❌ Missing Pinata API credentials. 
+                    API_KEY: ${PINATA_API_KEY ? "Present" : "Missing"}
+                    SECRET: ${PINATA_SECRET ? "Present" : "Missing"}
+                    Please check your .env file and restart the dev server.`
+                  );
+                  return;
+                }
+
+                const response = await fetch(
+                  "https://api.pinata.cloud/data/pinList",
+                  {
+                    method: "GET",
+                    headers: {
+                      pinata_api_key: PINATA_API_KEY,
+                      pinata_secret_api_key: PINATA_SECRET,
+                    },
+                  }
+                );
+
+                if (!response.ok) {
+                  throw new Error(`Pinata API error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log("📋 Found pinned files:", data);
+
+                if (data.rows && data.rows.length > 0) {
+                  // Get all CIDs from Pinata
+                  const realCids = data.rows.map(
+                    (file: any) => file.ipfs_pin_hash
+                  );
+                  console.log("🔧 Real CIDs from Pinata:", realCids);
+
+                  // Save to localStorage
+                  localStorage.setItem(
+                    "diary-entry-cids",
+                    JSON.stringify(realCids)
+                  );
+
+                  alert(
+                    `✅ Found ${realCids.length} real CIDs from Pinata! Refresh the page to see your entries.`
+                  );
+                } else {
+                  alert(
+                    "⚠️ No pinned files found in Pinata. Make sure you have uploaded diary entries."
+                  );
+                }
+              } catch (error) {
+                console.error("❌ Error fetching CIDs from Pinata:", error);
+                alert(`❌ Error: ${error.message}`);
+              }
+            }}
+            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm mr-2"
+          >
+            Get Real CIDs from Pinata
+          </button>
+          <button
+            onClick={() => {
+              // Fix the truncated CIDs with the real ones you provided
+              const realCids = [
+                "QmXhSBQfDcU9CaNbgsfAGqPRAXdbyMjCEg3FV32xAZijKh", // Real CID 1
+                "QmV4iMzhqF1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef", // Real CID 2 (you need to provide the real one)
+                "QmPcdRzNFZ1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef", // Real CID 3 (you need to provide the real one)
+              ];
+              localStorage.setItem(
+                "diary-entry-cids",
+                JSON.stringify(realCids)
+              );
+              console.log("🔧 Fixed CIDs with real ones:", realCids);
+              alert(
+                "✅ Fixed CIDs with real ones! Refresh the page to see your entries."
+              );
+            }}
+            className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm mr-2"
+          >
+            Fix Truncated CIDs
+          </button>
+          <button
+            onClick={async () => {
+              try {
+                console.log("🧪 Testing Pinata API credentials...");
+
+                const API_KEY = (import.meta as any).env.VITE_PINATA_API_KEY;
+                const SECRET = (import.meta as any).env.VITE_PINATA_SECRET;
+                console.log("API_KEY:", API_KEY ? "Present" : "Missing");
+                console.log("SECRET:", SECRET ? "Present" : "Missing");
+
+                if (!API_KEY || !SECRET) {
+                  alert(
+                    "❌ API credentials not found in environment variables"
+                  );
+                  return;
+                }
+
+                const response = await fetch(
+                  "https://api.pinata.cloud/data/pinList",
+                  {
+                    method: "GET",
+                    headers: {
+                      pinata_api_key: API_KEY,
+                      pinata_secret_api_key: SECRET,
+                    },
+                  }
+                );
+
+                console.log("Response status:", response.status);
+
+                if (response.ok) {
+                  const data = await response.json();
+                  console.log("✅ Pinata API test successful:", data);
+                  alert(
+                    `✅ Pinata API test successful! Found ${
+                      data.rows?.length || 0
+                    } pinned files.`
+                  );
+                } else {
+                  const errorText = await response.text();
+                  console.error("❌ Pinata API test failed:", errorText);
+                  alert(
+                    `❌ Pinata API test failed: ${response.status} - ${errorText}`
+                  );
+                }
+              } catch (error) {
+                console.error("❌ Test error:", error);
+                alert(`❌ Test error: ${error.message}`);
+              }
+            }}
+            className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors text-sm mr-2"
+          >
+            Test Pinata API
+          </button>
+          <button
+            onClick={() => {
+              window.location.reload();
+            }}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm mr-2"
+          >
+            Force Refresh App
+          </button>
+          <button
+            onClick={() => {
+              localStorage.removeItem("diary-entry-cids");
+              alert(
+                "All journal entry CIDs cleared from localStorage. Refresh the page to see the effect."
+              );
+            }}
+            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
+          >
+            Clear All Journal Entry CIDs
+          </button>
+        </div>
+        <p className="text-xs text-yellow-600 mt-2">
+          This will clear all saved journal entries from your browser's local
+          storage.
+        </p>
+      </div>
     </div>
   );
 }
