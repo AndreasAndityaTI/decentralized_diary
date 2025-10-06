@@ -8,6 +8,7 @@ export type DiaryEntry = {
   createdAt: string;
   mood?: string;
   walletAddress?: string;
+  location?: string;
 };
 
 const moodEmojis = {
@@ -34,11 +35,37 @@ export default function DiaryForm(props: {
   const [title, setTitle] = React.useState("");
   const [content, setContent] = React.useState("");
   const [mood, setMood] = React.useState<string | null>(null);
+  const [location, setLocation] = React.useState("");
+  const [countries, setCountries] = React.useState<Array<{ name: string; code: string }>>([]);
+  const [loadingCountries, setLoadingCountries] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [analyzing, setAnalyzing] = React.useState(false);
   const [error, setError] = React.useState("");
   const [recommendations, setRecommendations] = React.useState<any[]>([]);
   const [showRecommendations, setShowRecommendations] = React.useState(false);
+
+  // Load countries on component mount
+  React.useEffect(() => {
+    const loadCountries = async () => {
+      try {
+        setLoadingCountries(true);
+        const response = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2');
+        const data = await response.json();
+        const countryList = data
+          .map((country: any) => ({
+            name: country.name.common,
+            code: country.cca2
+          }))
+          .sort((a: any, b: any) => a.name.localeCompare(b.name));
+        setCountries(countryList);
+      } catch (err) {
+        console.error('Failed to load countries:', err);
+      } finally {
+        setLoadingCountries(false);
+      }
+    };
+    loadCountries();
+  }, []);
 
   const analyze = async () => {
     try {
@@ -314,6 +341,7 @@ export default function DiaryForm(props: {
         createdAt: new Date().toISOString(),
         mood: mood || undefined,
         walletAddress: props.walletAddress,
+        location: location || undefined,
       };
 
       // Extract metadata for Pinata
@@ -342,9 +370,17 @@ export default function DiaryForm(props: {
   return (
     <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200 space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-2xl font-bold text-gray-800">
-          Write Today's Story
-        </h3>
+        <div>
+          <h3 className="text-2xl font-bold text-gray-800">
+            Good Morning!
+          </h3>
+          <p className="text-gray-600 mt-1">
+            How are you feeling today?
+          </p>
+          <p className="text-sm text-gray-500 mt-1">
+            Ready to write today's story?
+          </p>
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -357,10 +393,33 @@ export default function DiaryForm(props: {
 
         <textarea
           className="w-full border border-gray-300 bg-white text-gray-800 placeholder-gray-500 rounded-xl p-4 min-h-[200px] focus:outline-none focus:ring-2 focus:ring-lavender resize-none text-lg leading-relaxed"
-          placeholder="How are you feeling today? What happened? What are you grateful for? Share your thoughts freely..."
+          placeholder="Start your journal entry and let AI analyze your mood"
           value={content}
           onChange={(e) => setContent(e.target.value)}
         />
+
+        {/* Location Input */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700">
+            📍 Location (optional)
+          </label>
+          <select
+            className="w-full border border-gray-300 bg-white text-gray-800 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-lavender"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            disabled={loadingCountries}
+          >
+            <option value="">Select your country...</option>
+            {countries.map((country) => (
+              <option key={country.code} value={country.name}>
+                {country.name}
+              </option>
+            ))}
+          </select>
+          {loadingCountries && (
+            <p className="text-sm text-gray-500">Loading countries...</p>
+          )}
+        </div>
       </div>
 
       {/* Mood Analysis */}
