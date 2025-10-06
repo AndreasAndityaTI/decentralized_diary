@@ -9,6 +9,7 @@ export type DiaryEntry = {
   mood?: string;
   walletAddress?: string;
   location?: string;
+  hideWalletAddress?: boolean;
 };
 
 const moodEmojis = {
@@ -36,6 +37,7 @@ export default function DiaryForm(props: {
   const [content, setContent] = React.useState("");
   const [mood, setMood] = React.useState<string | null>(null);
   const [location, setLocation] = React.useState("");
+  const [hideWalletAddress, setHideWalletAddress] = React.useState(false);
   const [countries, setCountries] = React.useState<Array<{ name: string; code: string }>>([]);
   const [loadingCountries, setLoadingCountries] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
@@ -342,6 +344,7 @@ export default function DiaryForm(props: {
         mood: mood || undefined,
         walletAddress: props.walletAddress,
         location: location || undefined,
+        hideWalletAddress,
       };
 
       // Extract metadata for Pinata
@@ -380,6 +383,11 @@ export default function DiaryForm(props: {
           <p className="text-sm text-gray-500 mt-1">
             Ready to write today's story?
           </p>
+          {props.walletAddress && (
+            <div className="mt-2 text-xs text-gray-500">
+              📱 Source: {props.walletAddress.slice(0, 10)}...{props.walletAddress.slice(-6)}
+            </div>
+          )}
         </div>
       </div>
 
@@ -420,6 +428,30 @@ export default function DiaryForm(props: {
             <p className="text-sm text-gray-500">Loading countries...</p>
           )}
         </div>
+
+        {/* Wallet Address Visibility Option */}
+        {props.walletAddress && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">
+              🔒 Wallet Address Visibility
+            </label>
+            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
+              <input
+                type="checkbox"
+                id="hideWalletAddress"
+                checked={hideWalletAddress}
+                onChange={(e) => setHideWalletAddress(e.target.checked)}
+                className="w-4 h-4 text-lavender bg-gray-100 border-gray-300 rounded focus:ring-lavender focus:ring-2"
+              />
+              <label htmlFor="hideWalletAddress" className="text-sm text-gray-700">
+                Hide wallet address from journal entry (address will still be used for data organization)
+              </label>
+            </div>
+            <p className="text-xs text-gray-500">
+              Your wallet address helps organize your entries and enables NFT minting features.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Mood Analysis */}

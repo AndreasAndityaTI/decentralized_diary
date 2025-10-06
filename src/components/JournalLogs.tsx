@@ -152,6 +152,11 @@ export default function JournalLogs({
                           📍 {entry.location}
                         </span>
                       )}
+                      {entry.walletAddress && !entry.hideWalletAddress && (
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-600">
+                          📱 {entry.walletAddress.slice(0, 8)}...{entry.walletAddress.slice(-6)}
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex items-center justify-end">
@@ -197,6 +202,16 @@ export default function JournalLogs({
                   <p className="text-gray-600">
                     {new Date(selectedEntry.entry.createdAt).toLocaleString()}
                   </p>
+                  {selectedEntry.entry.location && (
+                    <p className="text-sm text-gray-500">
+                      📍 {selectedEntry.entry.location}
+                    </p>
+                  )}
+                  {selectedEntry.entry.walletAddress && !selectedEntry.entry.hideWalletAddress && (
+                    <p className="text-sm text-gray-500">
+                      📱 {selectedEntry.entry.walletAddress}
+                    </p>
+                  )}
                 </div>
               </div>
 
