@@ -100,6 +100,15 @@ This will start the server on the default port (11434).
 - Private files (not publicly accessible)
 - Real-time fetching from decentralized storage
 
+### 🧾 On-Chain (Aiken) Roadmap
+
+- AI Companion subscription script (Cardano, Aiken)
+- NFT minting policy for first journal (global per wallet)
+- NFT minting policy for streaks (e.g., 7-day/30-day journaling)
+- Off-chain: store diary JSON on IPFS; on-chain only references IPFS CID and access/minting rules
+
+See `onchain/README.md` for contract details.
+
 ## How it works
 
 - **WalletConnect**: Enables a CIP-30 wallet and displays network info (expects testnet).
