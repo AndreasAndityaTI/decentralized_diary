@@ -188,7 +188,7 @@ export default function MoodMap({ entries }: MoodMapProps) {
           </div>
           <div className="bg-white/60 rounded-lg p-4 text-center">
             <div className="text-3xl font-bold text-green-600 mb-1">{globalStats.positivityRate}%</div>
-            <div className="text-sm text-gray-600">Positive Moods || with geo visualization api</div>
+            <div className="text-sm text-gray-600">Positive Moods </div>
           </div>
         </div>
       </div>
