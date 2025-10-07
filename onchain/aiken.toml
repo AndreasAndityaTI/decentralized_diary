@@ -1,6 +1,7 @@
 name = "andreasanditya/decentralized_diary"
 version = "0.1.0"
 license = "MIT"
+description = "Smart contracts for decentralized diary application with NFT minting, subscriptions, and data marketplace"
 
 [repository]
 platform = "github"
@@ -8,3 +9,38 @@ user = "andreasanditya"
 project = "decentralized_diary"
 
 dependencies = []
+
+[[validators]]
+name = "subscription"
+title = "AI Companion Subscription Validator"
+description = "Manages AI companion subscriptions with different tiers and usage limits"
+
+[[validators]]
+name = "journal_access"
+title = "Journal Access Control Validator"
+description = "Controls privacy settings for journal entries (public/private/paid access)"
+
+[[validators]]
+name = "profit_sharing"
+title = "NFT Profit Sharing Validator"
+description = "Handles profit distribution for NFT sales between creators and platform"
+
+[[validators]]
+name = "data_marketplace"
+title = "Data Marketplace Validator"
+description = "Manages the research data marketplace for journal datasets"
+
+[[policies]]
+name = "first_journal"
+title = "First Journal NFT Policy"
+description = "Mints NFT for users' first journal entry"
+
+[[policies]]
+name = "streak"
+title = "Journal Streak NFT Policy"
+description = "Mints NFTs for journaling streaks (weekly/monthly/custom)"
+
+[[policies]]
+name = "data_marketplace"
+title = "Data Marketplace NFT Policy"
+description = "Mints NFTs representing data ownership in the marketplace"
