@@ -9,10 +9,8 @@ const menuItems = [
   { id: "dashboard", label: "Home", icon: "🏠" },
   { id: "journal", label: "Journal", icon: "📝" },
   { id: "trends", label: "Mood Trends", icon: "📊" },
-  { id: "moodmap", label: "MoodMap", icon: "🌍" },
   { id: "ai-companion", label: "AI Companion", icon: "🤖" },
   { id: "profile", label: "Profile", icon: "👤" },
-  { id: "settings", label: "Settings", icon: "⚙️" },
 ];
 
 export default function Sidebar({ currentPage, onPageChange }: SidebarProps) {

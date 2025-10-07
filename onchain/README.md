@@ -2,7 +2,6 @@
 
 This folder contains Aiken smart contracts for Cardano:
 
-- AI Companion Subscription
 - NFT Minting Policies:
   - First Journal NFT (one-time per wallet)
   - Streak NFT (e.g., 7-day and 30-day)

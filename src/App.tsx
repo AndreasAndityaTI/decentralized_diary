@@ -9,19 +9,15 @@ import AICompanion from "./components/AICompanion";
 import Community from "./components/Community";
 import Profile from "./components/Profile";
 import DiaryForm, { DiaryEntry } from "./components/DiaryForm";
-import {
-  fetchAllEntries,
-  fetchAllEntriesLive,
-  addCid,
-  clearAllCids,
-  getStoredCids,
-} from "./services/entries";
-import { fetchEntriesFromIpfs } from "./services/ipfs";
-// import OnChainNote from "./components/OnChainNote";
+
+// Dynamic imports to avoid startup crashes - load services only when needed
+const entriesService = import("./services/entries");
+const ipfsService = import("./services/ipfs");
 
 export default function App() {
   const [connected, setConnected] = React.useState(false);
   const [walletAddress, setWalletAddress] = React.useState<string>("");
+  const [walletApi, setWalletApi] = React.useState<any>(null);
   const [currentPage, setCurrentPage] = React.useState("dashboard");
   const [lastCid, setLastCid] = React.useState<string>("");
   const [entries, setEntries] = React.useState<
@@ -29,12 +25,17 @@ export default function App() {
   >([]);
   const [loadingEntries, setLoadingEntries] = React.useState(false);
 
-  // Load entries live from IPFS on app start
+  // Load entries live from IPFS on app start - only after wallet is connected
   React.useEffect(() => {
+    if (!connected || !walletAddress) return;
+
     const loadEntries = async () => {
       console.log("🚀 App starting - loading ALL entries from IPFS...");
       setLoadingEntries(true);
       try {
+        const { fetchAllEntriesLive } = await entriesService;
+        const { fetchEntriesFromIpfs } = await ipfsService;
+
         // First try live discovery from Pinata API (automatic discovery)
         console.log("🌐 Trying live discovery from Pinata API...");
         const liveEntries = await fetchAllEntriesLive(walletAddress);
@@ -51,6 +52,7 @@ export default function App() {
           );
 
           // Fallback to localStorage CIDs
+          const { getStoredCids } = await entriesService;
           const cids = getStoredCids();
           console.log(`📋 Found ${cids.length} CIDs in localStorage:`, cids);
 
@@ -75,6 +77,7 @@ export default function App() {
 
         // Fallback: try the old method
         try {
+          const { fetchAllEntries } = await entriesService;
           const fallbackEntries = await fetchAllEntries();
           console.log("📝 Fallback entries:", fallbackEntries);
           setEntries(fallbackEntries);
@@ -87,17 +90,19 @@ export default function App() {
     };
 
     loadEntries();
-  }, [walletAddress]);
+  }, [walletAddress, connected]);
 
   const handlePublish = async (entry: DiaryEntry, cid: string) => {
     setLastCid(cid);
     // Add CID to storage
+    const { addCid } = await entriesService;
     addCid(cid);
 
     // Refresh all entries from IPFS to get both old and new entries
     console.log("🔄 Refreshing all entries after new publish...");
     setLoadingEntries(true);
     try {
+      const { fetchAllEntriesLive } = await entriesService;
       const allEntries = await fetchAllEntriesLive(walletAddress);
       setEntries(allEntries);
       console.log(`✅ Refreshed ${allEntries.length} total entries from IPFS`);
@@ -114,6 +119,7 @@ export default function App() {
   const refreshEntries = async () => {
     setLoadingEntries(true);
     try {
+      const { fetchAllEntriesLive } = await entriesService;
       const fetchedEntries = await fetchAllEntriesLive(walletAddress);
       setEntries(fetchedEntries);
     } catch (error) {
@@ -124,8 +130,9 @@ export default function App() {
   };
 
   // Function to clear all entries (useful for testing)
-  const clearAllEntries = () => {
+  const clearAllEntries = async () => {
     setEntries([]);
+    const { clearAllCids } = await entriesService;
     clearAllCids();
   };
 
@@ -151,35 +158,23 @@ export default function App() {
         );
       case "trends":
         return <MoodTrends entries={entries} />;
-      case "moodmap":
-        return <MoodMap entries={entries} />;
       case "ai-companion":
         return <AICompanion />;
       case "dao":
         return <Community />;
       case "profile":
-        return <Profile />;
-      case "settings":
-        return (
-          <div className="flex-1 p-8">
-            <h1 className="text-3xl font-bold text-gray-800 mb-6">Settings</h1>
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                Account Settings
-              </h2>
-              <p className="text-gray-600">Settings coming soon...</p>
-            </div>
-          </div>
-        );
+        return <Profile entries={entries} walletAddress={walletAddress} walletApi={walletApi} />;
       default:
         return <Dashboard onPublish={handlePublish} entries={entries} />;
     }
   };
 
-  const handleWalletConnected = (address: string) => {
+  const handleWalletConnected = (api: any, address: string) => {
     console.log("Wallet connected, redirecting to dashboard...");
+    console.log("Wallet API:", api);
     console.log("Wallet address:", address);
-    console.log("Setting wallet address state...");
+    console.log("Setting wallet state...");
+    setWalletApi(api);
     setWalletAddress(address);
     setConnected(true);
   };
@@ -195,7 +190,7 @@ export default function App() {
   }, [walletAddress]);
 
   if (!connected) {
-    return <Landing onConnected={handleWalletConnected} />;
+    return <Landing onConnected={(api, address) => handleWalletConnected(api, address)} />;
   }
 
   return (

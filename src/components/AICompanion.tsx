@@ -93,6 +93,11 @@ export default function AICompanion() {
     }
   };
 
+  const onSubscribe = async () => {
+    // TODO: integrate Cardano payment to subscription validator
+    alert("Subscription required: please complete payment via your Cardano wallet (coming soon)");
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -100,10 +105,6 @@ export default function AICompanion() {
     }
   };
 
-  const onSubscribe = async () => {
-    // TODO: integrate Cardano payment to subscription validator
-    alert("Subscription required: please complete payment via your Cardano wallet (coming soon)");
-  };
 
   return (
     <div className="flex-1 p-8 space-y-6">

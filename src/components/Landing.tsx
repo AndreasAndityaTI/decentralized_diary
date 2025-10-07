@@ -2,7 +2,7 @@ import React from "react";
 import WalletConnect from "./WalletConnect";
 
 interface LandingProps {
-  onConnected: (walletAddress: string) => void;
+  onConnected: (api: any, walletAddress: string) => void;
 }
 
 export default function Landing({ onConnected }: LandingProps) {
@@ -61,7 +61,7 @@ export default function Landing({ onConnected }: LandingProps) {
               // Get the first used address or change address
               const walletAddress = info.used?.[0] || info.change;
               console.log("🔍 Extracted wallet address:", walletAddress);
-              onConnected(walletAddress);
+              onConnected(api, walletAddress);
             }}
           />
           <p className="text-sm text-gray-500">
