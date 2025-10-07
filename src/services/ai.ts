@@ -6,9 +6,9 @@
 
 import axios from 'axios'
 
-const AI_ENDPOINT = import.meta.env.VITE_AI_ENDPOINT || 'http://localhost:11434/api/generate'
-const AI_MODEL = import.meta.env.VITE_AI_MODEL || 'phi3'
-const AI_AUTH = import.meta.env.VITE_AI_AUTH || ''
+const AI_ENDPOINT = import.meta.env.VITE_AI_ENDPOINT 
+const AI_MODEL = import.meta.env.VITE_AI_MODEL 
+const AI_AUTH = import.meta.env.VITE_AI_AUTH 
 
 // Generate empathetic assistant reply using Phi-3
 export async function generateAIReply(userInput: string, history: string[] = []): Promise<string> {
