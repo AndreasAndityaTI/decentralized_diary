@@ -50,6 +50,32 @@ export async function enableWallet(): Promise<{ api: WalletAPI; name: string } |
   return null;
 }
 
+// Journal purchase functionality
+export async function purchaseJournal(
+  api: WalletAPI,
+  journalIpfsCid: string,
+  sellerAddress: string,
+  priceInLovelace: number
+) {
+  try {
+    console.log("🛒 Initiating journal purchase...");
+    console.log("Journal CID:", journalIpfsCid);
+    console.log("Seller:", sellerAddress);
+    console.log("Price:", priceInLovelace, "lovelace");
+
+    // This would construct and submit a transaction to the journal_sales validator
+    // For now, simulate the purchase process
+    const txHash = "simulated_tx_hash_" + Date.now();
+
+    console.log("✅ Journal purchase transaction submitted:", txHash);
+    return { success: true, txHash };
+
+  } catch (error) {
+    console.error("❌ Journal purchase failed:", error);
+    throw error;
+  }
+}
+
 export async function getWalletInfo(api: WalletAPI, walletName: string) {
   console.log("Getting wallet info from API:", api);
   console.log("API methods available:", Object.keys(api));

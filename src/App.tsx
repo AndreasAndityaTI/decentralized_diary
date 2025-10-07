@@ -96,17 +96,46 @@ export default function App() {
     // Add CID to storage
     addCid(cid);
 
+    // Check if this is an edit (has original CID in localStorage)
+    const editData = localStorage.getItem('editEntry');
+    let isEdit = false;
+    let originalCid = '';
+
+    if (editData) {
+      try {
+        const { cid: origCid } = JSON.parse(editData);
+        originalCid = origCid;
+        isEdit = true;
+        localStorage.removeItem('editEntry');
+      } catch (error) {
+        console.error('Error parsing edit data:', error);
+      }
+    }
+
     // Refresh all entries from IPFS to get both old and new entries
     console.log("🔄 Refreshing all entries after new publish...");
     setLoadingEntries(true);
     try {
       const allEntries = await fetchAllEntriesLive(walletAddress);
-      setEntries(allEntries);
+      if (isEdit) {
+        // For edits, replace the old entry with the new one
+        setEntries(allEntries.map(({ entry: e, cid: c }) =>
+          c === originalCid ? { entry, cid } : { entry: e, cid: c }
+        ));
+      } else {
+        setEntries(allEntries);
+      }
       console.log(`✅ Refreshed ${allEntries.length} total entries from IPFS`);
     } catch (error) {
       console.error("❌ Failed to refresh entries after publish:", error);
-      // Fallback to just adding the new entry
-      setEntries((prev) => [{ entry, cid }, ...prev]);
+      // Fallback to just adding/updating the entry
+      if (isEdit) {
+        setEntries((prev) => prev.map(({ entry: e, cid: c }) =>
+          c === originalCid ? { entry, cid } : { entry: e, cid: c }
+        ));
+      } else {
+        setEntries((prev) => [{ entry, cid }, ...prev]);
+      }
     } finally {
       setLoadingEntries(false);
     }
@@ -133,6 +162,14 @@ export default function App() {
     localStorage.setItem('diaryCids', JSON.stringify(cids));
   };
 
+  // Function to edit an entry
+  const editEntry = (entry: DiaryEntry, cid: string) => {
+    // Store edit data in localStorage temporarily
+    localStorage.setItem('editEntry', JSON.stringify({ entry, cid }));
+    // Navigate to dashboard
+    setCurrentPage('dashboard');
+  };
+
   // Function to clear all entries (useful for testing)
   const clearAllEntries = () => {
     setEntries([]);
@@ -154,12 +191,16 @@ export default function App() {
         );
       case "journal":
         return (
-          <JournalLogs
-            entries={entries}
-            loading={loadingEntries}
-            onRefresh={refreshEntries}
-            onDelete={deleteEntry}
-          />
+          <div className="flex-1 p-8 space-y-6">
+            <JournalLogs
+              entries={entries}
+              loading={loadingEntries}
+              onRefresh={refreshEntries}
+              onDelete={deleteEntry}
+              onEdit={editEntry}
+              currentUserAddress={walletAddress}
+            />
+          </div>
         );
       case "trends":
         return <MoodTrends entries={entries} />;

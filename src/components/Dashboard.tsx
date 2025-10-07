@@ -9,6 +9,7 @@ interface DashboardProps {
   onRefresh?: () => void;
   walletAddress?: string;
   walletName?: string;
+  onEdit?: (entry: DiaryEntry, cid: string) => void;
 }
 
 const moodEmojis = {
@@ -35,12 +36,33 @@ export default function Dashboard({
   onRefresh,
   walletAddress,
   walletName,
+  onEdit,
 }: DashboardProps) {
   console.log("🔍 Dashboard received walletAddress:", walletAddress);
+  const [editingEntry, setEditingEntry] = React.useState<{ entry: DiaryEntry; cid: string } | null>(null);
+
+  // Check for edit data from localStorage on mount
+  React.useEffect(() => {
+    const editData = localStorage.getItem('editEntry');
+    if (editData) {
+      try {
+        const { entry, cid } = JSON.parse(editData);
+        setEditingEntry({ entry, cid });
+        localStorage.removeItem('editEntry');
+      } catch (error) {
+        console.error('Error parsing edit data:', error);
+      }
+    }
+  }, []);
+
   const todayEntry = entries.find(({ entry }) => {
     const today = new Date().toDateString();
     return new Date(entry.createdAt).toDateString() === today;
   });
+
+  const handleEdit = (entry: DiaryEntry, cid: string) => {
+    setEditingEntry({ entry, cid });
+  };
 
   return (
     <div className="flex-1 p-4 md:p-8 space-y-6">
@@ -93,7 +115,13 @@ export default function Dashboard({
       )}
 
       {/* Writing Form */}
-      <DiaryForm onPublished={onPublish} walletAddress={walletAddress} walletName={walletName} />
+      <DiaryForm
+        onPublished={onPublish}
+        walletAddress={walletAddress}
+        walletName={walletName}
+        editEntry={editingEntry?.entry}
+        onEditCancel={() => setEditingEntry(null)}
+      />
     </div>
   );
 }

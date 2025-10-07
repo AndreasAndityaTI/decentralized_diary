@@ -30,6 +30,11 @@ name = "data_marketplace"
 title = "Data Marketplace Validator"
 description = "Manages the research data marketplace for journal datasets"
 
+[[validators]]
+name = "journal_sales"
+title = "Journal Sales Validator"
+description = "Handles individual journal purchases with 50:50 profit sharing"
+
 [[policies]]
 name = "first_journal"
 title = "First Journal NFT Policy"

@@ -12,6 +12,8 @@ export type DiaryEntry = {
   location?: string;
   hideWalletAddress?: boolean;
   hideWalletUsername?: boolean;
+  forSale?: boolean;
+  salePrice?: number;
 };
 
 const moodEmojis = {
@@ -35,6 +37,8 @@ export default function DiaryForm(props: {
   onPublished: (entry: DiaryEntry, ipfsCid: string) => void;
   walletAddress?: string;
   walletName?: string;
+  editEntry?: DiaryEntry;
+  onEditCancel?: () => void;
 }) {
   const [title, setTitle] = React.useState("");
   const [content, setContent] = React.useState("");
@@ -43,14 +47,37 @@ export default function DiaryForm(props: {
   const [walletUsername, setWalletUsername] = React.useState(props.walletName || "");
   const [hideWalletAddress, setHideWalletAddress] = React.useState(false);
   const [hideWalletUsername, setHideWalletUsername] = React.useState(false);
+  const [mintForSale, setMintForSale] = React.useState(false);
+  const [salePrice, setSalePrice] = React.useState("");
   const [countries, setCountries] = React.useState<Array<{ name: string; code: string }>>([]);
   const [loadingCountries, setLoadingCountries] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [analyzing, setAnalyzing] = React.useState(false);
   const [error, setError] = React.useState("");
   const [success, setSuccess] = React.useState("");
+  const [showSuccessPopup, setShowSuccessPopup] = React.useState(false);
   const [recommendations, setRecommendations] = React.useState<any[]>([]);
   const [showRecommendations, setShowRecommendations] = React.useState(false);
+  const [manualMood, setManualMood] = React.useState<string>("");
+  const [useManualMood, setUseManualMood] = React.useState(false);
+
+  // Pre-fill form when editing
+  React.useEffect(() => {
+    if (props.editEntry) {
+      setTitle(props.editEntry.title);
+      setContent(props.editEntry.content);
+      setMood(props.editEntry.mood || null);
+      setLocation(props.editEntry.location || "");
+      setWalletUsername(props.editEntry.walletUsername || props.walletName || "");
+      setHideWalletAddress(props.editEntry.hideWalletAddress || false);
+      setHideWalletUsername(props.editEntry.hideWalletUsername || false);
+      setMintForSale(props.editEntry.forSale || false);
+      setSalePrice(props.editEntry.salePrice ? props.editEntry.salePrice.toString() : "");
+      // For editing, allow manual mood override
+      setManualMood(props.editEntry.mood || "");
+      setUseManualMood(true);
+    }
+  }, [props.editEntry, props.walletName]);
 
   // Load countries on component mount
   React.useEffect(() => {
@@ -80,7 +107,9 @@ export default function DiaryForm(props: {
       setError("");
       setAnalyzing(true);
       const res = await classifySentiment(content || title);
-      setMood(res.label);
+      if (!useManualMood) {
+        setMood(res.label);
+      }
       generateRecommendations({ label: res.label, score: res.score }, content);
     } catch (e: any) {
       setError(
@@ -344,16 +373,19 @@ export default function DiaryForm(props: {
       setError("");
       setSuccess("");
       setLoading(true);
+      const finalMood = useManualMood && manualMood ? manualMood : mood;
       const entry: DiaryEntry = {
         title,
         content,
-        createdAt: new Date().toISOString(),
-        mood: mood || undefined,
+        createdAt: props.editEntry ? props.editEntry.createdAt : new Date().toISOString(),
+        mood: finalMood || undefined,
         walletAddress: props.walletAddress,
         walletUsername: walletUsername || undefined,
         location: location || undefined,
         hideWalletAddress,
         hideWalletUsername,
+        forSale: mintForSale,
+        salePrice: mintForSale && salePrice ? parseFloat(salePrice) : undefined,
       };
 
       // Extract metadata for Pinata
@@ -369,7 +401,7 @@ export default function DiaryForm(props: {
       });
 
       props.onPublished(entry, ipfs.cid);
-      setSuccess("🎉 Your story has been successfully saved to IPFS!");
+      setShowSuccessPopup(true);
     } catch (e: any) {
       setError(
         e?.message ||
@@ -385,13 +417,13 @@ export default function DiaryForm(props: {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-2xl font-bold text-gray-800">
-            Good Morning!
+            {props.editEntry ? "Edit Your Journal" : "Good Morning!"}
           </h3>
           <p className="text-gray-600 mt-1">
-            How are you feeling today?
+            {props.editEntry ? "Make changes to your journal entry" : "How are you feeling today?"}
           </p>
           <p className="text-sm text-gray-500 mt-1">
-            Ready to write today's story?
+            {props.editEntry ? "Update your story and save changes" : "Ready to write today's story?"}
           </p>
           {props.walletAddress && (
             <div className="mt-2 text-xs text-gray-500">
@@ -504,41 +536,137 @@ export default function DiaryForm(props: {
             </p>
           </div>
         )}
+
+        {/* Mint for Sale Option */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700">
+            💰 Monetize Your Journal (50% for writer, 50% for company)
+          </label>
+          <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
+            <input
+              type="checkbox"
+              id="mintForSale"
+              checked={mintForSale}
+              onChange={(e) => setMintForSale(e.target.checked)}
+              className="w-4 h-4 text-lavender bg-gray-100 border-gray-300 rounded focus:ring-lavender focus:ring-2"
+            />
+            <label htmlFor="mintForSale" className="text-sm text-gray-700">
+              Make this journal available for purchase
+            </label>
+          </div>
+          {mintForSale && (
+            <div className="space-y-2">
+              <input
+                type="number"
+                step="0.1"
+                min="0.1"
+                className="w-full border border-gray-300 bg-white text-gray-800 placeholder-gray-500 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-lavender"
+                placeholder="Enter price in ADA (e.g., 1.5)"
+                value={salePrice}
+                onChange={(e) => setSalePrice(e.target.value)}
+              />
+              <p className="text-xs text-gray-500">
+                Price in ADA. You'll receive 50% of the sale, platform gets 50%.
+              </p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Mood Analysis */}
-      <div className="flex items-center justify-between">
-        <button
-          onClick={analyze}
-          disabled={analyzing || !content.trim()}
-          className="px-6 py-3 rounded-xl bg-gradient-to-r from-mint-green to-soft-yellow text-gray-800 hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-        >
-          {analyzing
-            ? "Understanding your feelings..."
-            : "💭 How am I feeling?"}
-        </button>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={analyze}
+            disabled={analyzing || !content.trim()}
+            className="px-6 py-3 rounded-xl bg-gradient-to-r from-mint-green to-soft-yellow text-gray-800 hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          >
+            {analyzing
+              ? "Understanding your feelings..."
+              : "💭 How am I feeling?"}
+          </button>
 
-        {mood && (
-          <div className="flex items-center space-x-3 bg-gradient-to-r from-lavender/20 to-sky-blue/20 rounded-xl p-3">
-            <span className="text-2xl">
-              {moodEmojis[mood as keyof typeof moodEmojis] || "😊"}
-            </span>
-            <div>
-              <div className="font-semibold text-gray-800 capitalize">
-                {mood}
+          {mood && !useManualMood && (
+            <div className="flex items-center space-x-3 bg-gradient-to-r from-lavender/20 to-sky-blue/20 rounded-xl p-3">
+              <span className="text-2xl">
+                {moodEmojis[mood as keyof typeof moodEmojis] || "😊"}
+              </span>
+              <div>
+                <div className="font-semibold text-gray-800 capitalize">
+                  {mood}
+                </div>
+                <div className="text-xs text-gray-600">AI detected</div>
               </div>
             </div>
+          )}
+        </div>
+
+        {/* Manual Mood Selection */}
+        <div className="space-y-2">
+          <div className="flex items-center space-x-3">
+            <input
+              type="checkbox"
+              id="useManualMood"
+              checked={useManualMood}
+              onChange={(e) => setUseManualMood(e.target.checked)}
+              className="w-4 h-4 text-lavender bg-gray-100 border-gray-300 rounded focus:ring-lavender focus:ring-2"
+            />
+            <label htmlFor="useManualMood" className="text-sm font-medium text-gray-700">
+              Override AI mood analysis
+            </label>
           </div>
-        )}
+
+          {useManualMood && (
+            <div className="ml-7 space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Select your mood manually:
+              </label>
+              <select
+                value={manualMood}
+                onChange={(e) => setManualMood(e.target.value)}
+                className="w-full border border-gray-300 bg-white text-gray-800 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-lavender"
+              >
+                <option value="">Choose a mood...</option>
+                {Object.entries(moodEmojis).map(([moodKey, emoji]) => (
+                  <option key={moodKey} value={moodKey}>
+                    {emoji} {moodKey.charAt(0).toUpperCase() + moodKey.slice(1)}
+                  </option>
+                ))}
+              </select>
+              {manualMood && (
+                <div className="flex items-center space-x-3 bg-gradient-to-r from-lavender/20 to-sky-blue/20 rounded-xl p-3 w-fit">
+                  <span className="text-2xl">
+                    {moodEmojis[manualMood as keyof typeof moodEmojis] || "😊"}
+                  </span>
+                  <div>
+                    <div className="font-semibold text-gray-800 capitalize">
+                      {manualMood}
+                    </div>
+                    <div className="text-xs text-gray-600">Manual selection</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end space-x-3">
+        {props.editEntry && props.onEditCancel && (
+          <button
+            onClick={props.onEditCancel}
+            disabled={loading}
+            className="px-6 py-3 rounded-xl bg-gray-200 text-gray-700 hover:bg-gray-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          >
+            Cancel
+          </button>
+        )}
         <button
           onClick={publish}
           disabled={loading || analyzing || !title.trim() || !content.trim()}
           className="px-8 py-3 rounded-xl bg-gradient-to-r from-lavender to-sky-blue text-white hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-lg"
         >
-          {loading ? "Saving your story..." : "📖 Save My Story"}
+          {loading ? "Saving..." : props.editEntry ? "📝 Update Journal" : "📖 Save My Story"}
         </button>
       </div>
 
@@ -548,11 +676,6 @@ export default function DiaryForm(props: {
         </div>
       )}
 
-      {success && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-          <p className="text-sm text-green-600">{success}</p>
-        </div>
-      )}
 
       {/* Personalized Recommendations */}
       {showRecommendations && recommendations.length > 0 && (
@@ -605,6 +728,33 @@ export default function DiaryForm(props: {
               💝 These recommendations are tailored to your current emotional
               state
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Success Popup Modal */}
+      {showSuccessPopup && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 text-center shadow-2xl">
+            <div className="text-6xl mb-4">🎉</div>
+            <h3 className="text-2xl font-bold text-gray-800 mb-2">
+              Story Saved Successfully!
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Your journal entry has been securely saved to IPFS and is now part of the decentralized diary network.
+            </p>
+            <div className="space-y-3">
+              <div >
+                📖 Your story is now live!
+              </div>
+              <br></br>
+              <button
+                onClick={() => setShowSuccessPopup(false)}
+                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-medium transition-colors duration-200"
+              >
+                Continue Writing
+              </button>
+            </div>
           </div>
         </div>
       )}
