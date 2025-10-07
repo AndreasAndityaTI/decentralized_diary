@@ -9,6 +9,14 @@ interface ProfileProps {
 export default function Profile({ entries, walletAddress, walletApi }: ProfileProps) {
   const [isMinting, setIsMinting] = useState(false);
   const [mintStatus, setMintStatus] = useState<string>("");
+  const [mintedNFTs, setMintedNFTs] = useState<Array<{
+    id: string;
+    name: string;
+    description: string;
+    image: string;
+    txHash: string;
+    mintedDate: string;
+  }>>([]);
 
 
   return (
@@ -61,21 +69,20 @@ export default function Profile({ entries, walletAddress, walletApi }: ProfilePr
 
                   setMintStatus(`✅ Successfully minted! Transaction: ${txHash}`);
 
-                  // Add the minted NFT to the mock data
-                  const newNFT = {
+                  // Add the minted NFT to the profile
+                  const newMintedNFT = {
                     id: `minted-${Date.now()}`,
                     name: "First Journal NFT",
                     description: "Your first journal entry minted on Cardano",
                     image: "📖",
-                    rarity: "legendary" as const,
+                    txHash: txHash,
                     mintedDate: new Date().toISOString().split('T')[0],
-                    collection: "DeDiary First Journals",
-                    tokenId: `FJ-${Date.now()}`,
                   };
 
-                  // Show success with scanner link
-                  const scannerUrl = `https://preprod.cardanoscan.io/transaction/${txHash}`;
-                  alert(`🎉 NFT Minted Successfully!\n\nTransaction Hash: ${txHash}\n\n🔍 View on Cardano Scanner: ${scannerUrl}\n\nCheck your wallet for the new NFT.`);
+                  setMintedNFTs(prev => [...prev, newMintedNFT]);
+
+                  // Show success message
+                  alert(`🎉 NFT Minted Successfully!\n\nTransaction Hash: ${txHash}\n\nThe NFT has been added to your profile.`);
 
                 } catch (error: any) {
                   console.error("Minting failed:", error);
@@ -100,6 +107,48 @@ export default function Profile({ entries, walletAddress, walletApi }: ProfilePr
 
 
 
+
+      {/* Minted NFTs Display */}
+      {mintedNFTs.length > 0 && (
+        <div className="bg-gradient-to-r from-green-500 to-teal-500 rounded-2xl p-6 text-white">
+          <h3 className="text-xl font-bold mb-4">🎨 Your Minted NFTs</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {mintedNFTs.map((nft) => (
+              <div
+                key={nft.id}
+                className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/30"
+              >
+                <div className="text-center mb-3">
+                  <div className="text-4xl mb-2">{nft.image}</div>
+                  <h4 className="font-semibold text-lg">{nft.name}</h4>
+                  <p className="text-sm opacity-80">{nft.description}</p>
+                </div>
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <span>Minted:</span>
+                    <span className="font-medium">{nft.mintedDate}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Transaction:</span>
+                    <span className="font-medium font-mono text-xs">
+                      {nft.txHash.substring(0, 12)}...
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    const scannerUrl = `https://preprod.cardanoscan.io/transaction/${nft.txHash}`;
+                    window.open(scannerUrl, '_blank');
+                  }}
+                  className="w-full mt-3 px-4 py-2 bg-white text-green-600 rounded-lg hover:bg-gray-100 transition-all duration-200 text-sm font-medium"
+                >
+                  🔍 View Transaction
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Debug Section */}
       <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">

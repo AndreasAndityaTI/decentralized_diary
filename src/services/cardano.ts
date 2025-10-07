@@ -162,205 +162,84 @@ export async function mintFirstJournalNFT(
   walletAddress: string,
   ipfsCid: string
 ): Promise<string> {
-  console.log('🎨 Starting Blockfrost NFT minting process...');
+  console.log('🎨 Starting NMKR NFT minting process...');
 
-  // For now, use key policy minting since Plutus isn't supported in browser CSL
-  const POLICY_ID = '741f480a059f581fe6250375077d304401732d661a22a15aa7509ed8';
-
-  const cardanoLib = await loadCardanoLib();
+  // NMKR project configuration
+  const POLICY_ID = "741f480a059f581fe6250375077d304401732d661a22a15aa7509ed8";
+  const NMKR_PROJECT_UID = "1186a714-224c-4c08-80cc-3bc55a6c6698";
+  const NMKR_NFT_UID = "b56c9f9e-093d-41cf-818b-89b156b08f95";
+  const NMKR_API_KEY = "4760cd64b8044f61a11a5d0a3eea9ea4";
 
   try {
     console.log('🔍 Checking wallet connection...');
     console.log('Available wallet API methods:', Object.keys(api));
 
+    // Convert wallet address to bech32 format for NMKR
     const userAddress = await ensureBech32Address(walletAddress);
+
     if (!userAddress) {
       throw new Error("No wallet address provided");
     }
 
     console.log('✅ Using wallet address:', userAddress.substring(0, 20) + '...');
 
-    // Get UTXOs from Blockfrost
-    console.log('📦 Getting UTXOs from Blockfrost...');
-    const utxoResponse = await fetch(`https://cardano-preprod.blockfrost.io/api/v0/addresses/${userAddress}/utxos`, {
-      headers: {
-        'project_id': BLOCKFROST_PROJECT_ID
+    console.log('📋 Preparing NMKR minting request...');
+    console.log('Policy ID:', POLICY_ID);
+    console.log('IPFS CID:', ipfsCid);
+
+    // Prepare CIP-25 metadata according to NMKR template
+    const assetName = 'FirstJournalNFT';
+    const metadata = {
+      "721": {
+        [POLICY_ID]: {
+          [assetName]: {
+            "name": "First Journal NFT",
+            "image": `ipfs://${ipfsCid}`,
+            "mediaType": "image/jpeg",
+            "description": "NFT representing the first journal entry on the decentralized diary",
+            "files": [
+              {
+                "name": "Journal Content",
+                "mediaType": "text/plain",
+                "src": `ipfs://${ipfsCid}`
+              }
+            ]
+          }
+        },
+        "version": "1.0"
       }
-    });
-    if (!utxoResponse.ok) {
-      throw new Error(`Failed to fetch UTXOs: ${utxoResponse.status}`);
-    }
-    const utxoData = await utxoResponse.json();
-    if (!utxoData || utxoData.length === 0) {
-      throw new Error("No UTXOs available in wallet");
-    }
-
-    // Convert Blockfrost UTXO data to TransactionUnspentOutput
-    const utxos = utxoData.slice(0, 5).map((utxo: any) => {
-      const txHash = utxo.tx_hash;
-      const outputIndex = utxo.output_index;
-      const amount = utxo.amount;
-      const address = utxo.address;
-
-      // Build the UTXO
-      const txIn = cardanoLib.TransactionInput.new(cardanoLib.TransactionHash.from_bytes(hexToBytes(txHash)), outputIndex);
-      const value = cardanoLib.Value.new(cardanoLib.BigNum.from_str('0'));
-      for (const amt of amount) {
-        if (amt.unit === 'lovelace') {
-          value.set_coin(cardanoLib.BigNum.from_str(amt.quantity));
-        } else {
-          // Multi asset
-          const policyId = amt.unit.slice(0, 56);
-          const assetName = amt.unit.slice(56);
-          const multiAsset = value.multiasset() || cardanoLib.MultiAsset.new();
-          const assets = multiAsset.get(cardanoLib.ScriptHash.from_hex(policyId)) || cardanoLib.Assets.new();
-          assets.insert(cardanoLib.AssetName.new(hexToBytes(assetName)), cardanoLib.BigNum.from_str(amt.quantity));
-          multiAsset.insert(cardanoLib.ScriptHash.from_hex(policyId), assets);
-          value.set_multiasset(multiAsset);
-        }
-      }
-      const txOut = cardanoLib.TransactionOutput.new(cardanoLib.Address.from_bech32(address), value);
-      return cardanoLib.TransactionUnspentOutput.new(txIn, txOut);
-    });
-
-    // Use user address as change address
-    const changeAddress = userAddress;
-    console.log('🏠 Using user address as change address');
-
-    // Get protocol parameters from Blockfrost
-    console.log('⚙️ Fetching protocol parameters...');
-    const protocolResponse = await fetch(`https://cardano-preprod.blockfrost.io/api/v0/epochs/latest/parameters`, {
-      headers: {
-        'project_id': BLOCKFROST_PROJECT_ID
-      }
-    });
-    if (!protocolResponse.ok) {
-      throw new Error(`Failed to fetch protocol parameters: ${protocolResponse.status}`);
-    }
-    const protocolParams = await protocolResponse.json();
-    const pParams = {
-      min_fee_a: protocolParams.min_fee_a || DEFAULT_PROTOCOL_PARAMS.min_fee_a,
-      min_fee_b: protocolParams.min_fee_b || DEFAULT_PROTOCOL_PARAMS.min_fee_b,
-      pool_deposit: protocolParams.pool_deposit || DEFAULT_PROTOCOL_PARAMS.pool_deposit,
-      key_deposit: protocolParams.key_deposit || DEFAULT_PROTOCOL_PARAMS.key_deposit,
-      max_val_size: protocolParams.max_val_size || DEFAULT_PROTOCOL_PARAMS.max_val_size,
-      max_tx_size: protocolParams.max_tx_size || DEFAULT_PROTOCOL_PARAMS.max_tx_size,
-      coins_per_utxo_size: protocolParams.coins_per_utxo_size || DEFAULT_PROTOCOL_PARAMS.coins_per_utxo_size,
     };
 
-    // Prepare minting
-    const assetName = 'FirstJournalNFT';
-    const assetNameHex = bytesToHex(stringToBytes(assetName));
+    console.log('🌐 Calling NMKR API...');
 
-    // Create metadata
-    const metadata = cardanoLib.GeneralTransactionMetadata.new();
-
-    // CIP-25 metadata structure
-    const assetMetadataMap = cardanoLib.MetadataMap.new();
-    assetMetadataMap.insert(
-      cardanoLib.TransactionMetadatum.new_text('name'),
-      cardanoLib.TransactionMetadatum.new_text('First Journal NFT')
-    );
-    assetMetadataMap.insert(
-      cardanoLib.TransactionMetadatum.new_text('image'),
-      cardanoLib.TransactionMetadatum.new_text(ipfsCid)
-    );
-    assetMetadataMap.insert(
-      cardanoLib.TransactionMetadatum.new_text('mediaType'),
-      cardanoLib.TransactionMetadatum.new_text('image/jpeg')
-    );
-    assetMetadataMap.insert(
-      cardanoLib.TransactionMetadatum.new_text('description'),
-      cardanoLib.TransactionMetadatum.new_text('NFT for first journal entry on decentralized diary')
-    );
-
-    // Files array
-    const fileMap = cardanoLib.MetadataMap.new();
-    fileMap.insert(cardanoLib.TransactionMetadatum.new_text('name'), cardanoLib.TransactionMetadatum.new_text('Journal Content'));
-    fileMap.insert(cardanoLib.TransactionMetadatum.new_text('mediaType'), cardanoLib.TransactionMetadatum.new_text('text/plain'));
-    fileMap.insert(cardanoLib.TransactionMetadatum.new_text('src'), cardanoLib.TransactionMetadatum.new_text(ipfsCid));
-    const filesList = cardanoLib.MetadataList.new();
-    filesList.add(cardanoLib.TransactionMetadatum.new_map(fileMap));
-    assetMetadataMap.insert(cardanoLib.TransactionMetadatum.new_text('files'), cardanoLib.TransactionMetadatum.new_list(filesList));
-
-    const policyMetadataMap = cardanoLib.MetadataMap.new();
-    policyMetadataMap.insert(cardanoLib.TransactionMetadatum.new_text(assetName), cardanoLib.TransactionMetadatum.new_map(assetMetadataMap));
-
-    const cip25Map = cardanoLib.MetadataMap.new();
-    cip25Map.insert(cardanoLib.TransactionMetadatum.new_bytes(hexToBytes(POLICY_ID)), cardanoLib.TransactionMetadatum.new_map(policyMetadataMap));
-    cip25Map.insert(cardanoLib.TransactionMetadatum.new_text('version'), cardanoLib.TransactionMetadatum.new_text('1.0'));
-
-    metadata.insert(cardanoLib.BigNum.from_str('721'), cardanoLib.TransactionMetadatum.new_map(cip25Map));
-
-    // Build transaction
-    console.log('🔨 Building transaction...');
-    const txBuilder = cardanoLib.TransactionBuilder.new(
-      cardanoLib.TransactionBuilderConfigBuilder.new()
-        .fee_algo(cardanoLib.LinearFee.new(cardanoLib.BigNum.from_str(pParams.min_fee_a.toString()), cardanoLib.BigNum.from_str(pParams.min_fee_b.toString())))
-        .pool_deposit(cardanoLib.BigNum.from_str(pParams.pool_deposit.toString()))
-        .key_deposit(cardanoLib.BigNum.from_str(pParams.key_deposit.toString()))
-        .max_value_size(pParams.max_val_size)
-        .max_tx_size(pParams.max_tx_size)
-        .coins_per_utxo_byte(cardanoLib.BigNum.from_str(pParams.coins_per_utxo_size.toString()))
-        .build()
-    );
-
-    // Add inputs
-    for (const utxo of utxos.slice(0, 5)) { // Use up to 5 UTXOs
-      txBuilder.add_input(utxo.output().address(), utxo.input(), utxo.output().amount());
-    }
-
-    // Add mint
-    const mintAssets = cardanoLib.MintAssets.new();
-    mintAssets.insert(cardanoLib.AssetName.new(hexToBytes(assetNameHex)), cardanoLib.Int.new_i32(1));
-    const mint = cardanoLib.Mint.new();
-    mint.insert(cardanoLib.ScriptHash.from_hex(POLICY_ID), mintAssets);
-    txBuilder.set_mint(mint);
-
-    // Add output with NFT
-    const outputAddress = cardanoLib.Address.from_bech32(userAddress);
-    const value = cardanoLib.Value.new(cardanoLib.BigNum.from_str('2000000')); // 2 ADA for fees
-    const multiAsset = cardanoLib.MultiAsset.new();
-    const assets = cardanoLib.Assets.new();
-    assets.insert(cardanoLib.AssetName.new(hexToBytes(assetNameHex)), cardanoLib.BigNum.from_str('1'));
-    multiAsset.insert(cardanoLib.ScriptHash.from_hex(POLICY_ID), assets);
-    value.set_multiasset(multiAsset);
-    txBuilder.add_output(cardanoLib.TransactionOutput.new(outputAddress, value));
-
-    // Set metadata
-    txBuilder.set_auxiliary_data(cardanoLib.AuxiliaryData.new().set_metadata(metadata));
-
-    // Add change
-    txBuilder.add_change_if_needed(cardanoLib.Address.from_bech32(changeAddress));
-
-    // Build transaction
-    const tx = txBuilder.build_tx();
-    const txHex = bytesToHex(tx.to_bytes());
-
-    console.log('✍️ Signing transaction...');
-    const signedTxHex = await api.signTx(txHex, false);
-
-    console.log('📤 Submitting transaction to Blockfrost...');
-    const submitResponse = await fetch(`https://cardano-preprod.blockfrost.io/api/v0/tx/submit`, {
-      method: 'POST',
+    // NMKR API call for minting (using Vite proxy to avoid CORS)
+    // Using MintAndSendSpecific endpoint
+    const nmkrResponse = await fetch(`/api/nmkr/v2/MintAndSendSpecific/${NMKR_PROJECT_UID}/${NMKR_NFT_UID}/1/${userAddress}`, {
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/cbor',
-        'project_id': BLOCKFROST_PROJECT_ID
-      },
-      body: hexToBytes(signedTxHex) as any
+        'Authorization': `Bearer ${NMKR_API_KEY}`
+      }
     });
-    if (!submitResponse.ok) {
-      const errorText = await submitResponse.text();
-      throw new Error(`Failed to submit transaction: ${submitResponse.status} ${errorText}`);
-    }
-    const submitResult = await submitResponse.json();
 
-    console.log('🎉 NFT MINTING SUCCESSFUL!');
-    console.log('🔗 Transaction hash:', submitResult);
+    if (!nmkrResponse.ok) {
+      const errorData = await nmkrResponse.text();
+      console.error('❌ NMKR API error:', errorData);
+      throw new Error(`NMKR API error: ${nmkrResponse.status} ${nmkrResponse.statusText}`);
+    }
+
+    const nmkrResult = await nmkrResponse.json();
+    console.log('✅ NMKR minting initiated:', nmkrResult);
+
+    // NMKR returns transaction information
+    const txHash = nmkrResult.transactionHash || nmkrResult.txHash || `nmkr_${Date.now()}`;
+
+    console.log('🎉 NFT MINTING REQUEST SENT TO NMKR!');
+    console.log('🔗 Transaction hash:', txHash);
     console.log('🖼️ NFT Policy ID:', POLICY_ID);
     console.log('🏷️ NFT Asset Name:', assetName);
+    console.log('📍 Check NMKR dashboard for minting status');
 
-    return submitResult;
+    return txHash;
 
   } catch (error: any) {
     console.error('❌ Minting error:', error);

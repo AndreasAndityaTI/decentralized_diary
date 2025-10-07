@@ -50,6 +50,74 @@ VITE_SENTIMENT_AUTH=
 - **Pinata (IPFS Storage)**: Go to [Pinata](https://app.pinata.cloud/), sign up, create API keys, copy JWT token and API key/secret
 - **Ollama (AI)**: Install from [ollama.ai](https://ollama.ai/), run `ollama pull phi3`, start Ollama service
 
+## NMKR Setup (NFT Minting)
+
+This app uses NMKR for Cardano NFT minting. Follow these steps to set up your NMKR account and configure NFTs:
+
+### 1. Create NMKR Account
+1. Go to [NMKR Studio](https://studio.nmkr.io/)
+2. Sign up for a free account
+3. Verify your email
+
+### 2. Create a Project
+1. In NMKR Studio, click "Create New Project"
+2. Choose "Cardano" as the blockchain
+3. Set network to "Preprod Testnet" (for testing)
+4. Name your project (e.g., "DeDiary NFTs")
+5. Click "Create Project"
+
+### 3. Create NFT Collection
+1. In your project, click "Create NFT"
+2. Upload NFT image/artwork
+3. Set NFT details:
+   - **Name**: "First Journal NFT"
+   - **Description**: "NFT representing the first journal entry on the decentralized diary"
+   - **Quantity**: Set to unlimited or a high number (e.g., 1000)
+   - **Royalty**: Optional (e.g., 5%)
+4. Configure metadata:
+   - Add attributes like "Category: Journaling"
+   - Set external URL if needed
+5. Save and publish the NFT
+
+### 4. Get API Credentials
+1. In NMKR Studio, go to "Settings" → "API Keys"
+2. Create a new API key
+3. Copy the following values:
+   - **API Key**: Your API key (looks like `4760cd64b8044f61a11a5d0a3eea9ea4`)
+   - **Project UID**: Your project ID (looks like `1186a714-224c-4c08-80cc-3bc55a6c6698`)
+   - **NFT UID**: Your NFT ID (looks like `b56c9f9e-093d-41cf-818b-89b156b08f95`)
+
+### 5. Update Code Configuration
+1. Open `src/services/cardano.ts`
+2. Find the NMKR configuration section:
+```typescript
+// NMKR project configuration
+const POLICY_ID = "741f480a059f581fe6250375077d304401732d661a22a15aa7509ed8";
+const NMKR_PROJECT_UID = "1186a714-224c-4c08-80cc-3bc55a6c6698";
+const NMKR_NFT_UID = "b56c9f9e-093d-41cf-818b-89b156b08f95";
+const NMKR_API_KEY = "4760cd64b8044f61a11a5d0a3eea9ea4";
+```
+3. Replace the values with your NMKR credentials:
+   - Keep `POLICY_ID` as is (this is the minting policy)
+   - Update `NMKR_PROJECT_UID` with your project ID
+   - Update `NMKR_NFT_UID` with your NFT ID
+   - Update `NMKR_API_KEY` with your API key
+
+### 6. Test NFT Minting
+1. Start the app: `npm run dev`
+2. Connect a Cardano wallet (Nami/Eternl/Lace)
+3. Write a journal entry
+4. Go to Profile page
+5. Click "Mint Your First Journal NFT"
+6. The NFT should be minted and sent to your wallet
+
+### Important Notes
+- **Testnet First**: Always test on preprod testnet before mainnet
+- **API Limits**: NMKR has rate limits - don't spam minting
+- **Costs**: NFT minting costs ADA (paid by the minter)
+- **Metadata**: NMKR handles CIP-25 metadata automatically
+- **Support**: Check [NMKR Documentation](https://docs.nmkr.io/) for help
+
 3. Run dev server:
 
 ```bash
