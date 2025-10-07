@@ -8,8 +8,10 @@ export type DiaryEntry = {
   createdAt: string;
   mood?: string;
   walletAddress?: string;
+  walletUsername?: string;
   location?: string;
   hideWalletAddress?: boolean;
+  hideWalletUsername?: boolean;
 };
 
 const moodEmojis = {
@@ -32,17 +34,21 @@ const moodEmojis = {
 export default function DiaryForm(props: {
   onPublished: (entry: DiaryEntry, ipfsCid: string) => void;
   walletAddress?: string;
+  walletName?: string;
 }) {
   const [title, setTitle] = React.useState("");
   const [content, setContent] = React.useState("");
   const [mood, setMood] = React.useState<string | null>(null);
   const [location, setLocation] = React.useState("");
+  const [walletUsername, setWalletUsername] = React.useState(props.walletName || "");
   const [hideWalletAddress, setHideWalletAddress] = React.useState(false);
+  const [hideWalletUsername, setHideWalletUsername] = React.useState(false);
   const [countries, setCountries] = React.useState<Array<{ name: string; code: string }>>([]);
   const [loadingCountries, setLoadingCountries] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [analyzing, setAnalyzing] = React.useState(false);
   const [error, setError] = React.useState("");
+  const [success, setSuccess] = React.useState("");
   const [recommendations, setRecommendations] = React.useState<any[]>([]);
   const [showRecommendations, setShowRecommendations] = React.useState(false);
 
@@ -336,6 +342,7 @@ export default function DiaryForm(props: {
   const publish = async () => {
     try {
       setError("");
+      setSuccess("");
       setLoading(true);
       const entry: DiaryEntry = {
         title,
@@ -343,8 +350,10 @@ export default function DiaryForm(props: {
         createdAt: new Date().toISOString(),
         mood: mood || undefined,
         walletAddress: props.walletAddress,
+        walletUsername: walletUsername || undefined,
         location: location || undefined,
         hideWalletAddress,
+        hideWalletUsername,
       };
 
       // Extract metadata for Pinata
@@ -360,6 +369,7 @@ export default function DiaryForm(props: {
       });
 
       props.onPublished(entry, ipfs.cid);
+      setSuccess("🎉 Your story has been successfully saved to IPFS!");
     } catch (e: any) {
       setError(
         e?.message ||
@@ -371,7 +381,7 @@ export default function DiaryForm(props: {
   };
 
   return (
-    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200 space-y-6">
+    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 md:p-6 shadow-lg border border-gray-200 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-2xl font-bold text-gray-800">
@@ -429,6 +439,24 @@ export default function DiaryForm(props: {
           )}
         </div>
 
+        {/* Wallet Username Input */}
+        {props.walletName && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">
+              👤 Wallet Username
+            </label>
+            <input
+              className="w-full border border-gray-300 bg-white text-gray-800 placeholder-gray-500 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-lavender"
+              placeholder="Enter your wallet username"
+              value={walletUsername}
+              onChange={(e) => setWalletUsername(e.target.value)}
+            />
+            <p className="text-xs text-gray-500">
+              This will be displayed with your journal entry (can be edited)
+            </p>
+          </div>
+        )}
+
         {/* Wallet Address Visibility Option */}
         {props.walletAddress && (
           <div className="space-y-2">
@@ -449,6 +477,30 @@ export default function DiaryForm(props: {
             </div>
             <p className="text-xs text-gray-500">
               Your wallet address helps organize your entries and enables NFT minting features.
+            </p>
+          </div>
+        )}
+
+        {/* Wallet Username Visibility Option */}
+        {props.walletName && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">
+              🔒 Wallet Username Visibility
+            </label>
+            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
+              <input
+                type="checkbox"
+                id="hideWalletUsername"
+                checked={hideWalletUsername}
+                onChange={(e) => setHideWalletUsername(e.target.checked)}
+                className="w-4 h-4 text-lavender bg-gray-100 border-gray-300 rounded focus:ring-lavender focus:ring-2"
+              />
+              <label htmlFor="hideWalletUsername" className="text-sm text-gray-700">
+                Hide wallet username from journal entry
+              </label>
+            </div>
+            <p className="text-xs text-gray-500">
+              Your wallet username identifies your wallet provider.
             </p>
           </div>
         )}
@@ -493,6 +545,12 @@ export default function DiaryForm(props: {
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4">
           <p className="text-sm text-red-600">{error}</p>
+        </div>
+      )}
+
+      {success && (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+          <p className="text-sm text-green-600">{success}</p>
         </div>
       )}
 

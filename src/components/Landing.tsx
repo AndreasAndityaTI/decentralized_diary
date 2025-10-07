@@ -2,13 +2,13 @@ import React from "react";
 import WalletConnect from "./WalletConnect";
 
 interface LandingProps {
-  onConnected: (walletAddress: string) => void;
+  onConnected: (walletAddress: string, walletName: string) => void;
 }
 
 export default function Landing({ onConnected }: LandingProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-lavender via-sky-blue to-mint-green flex items-center justify-center p-6">
-      <div className="max-w-4xl mx-auto text-center space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-lavender via-sky-blue to-mint-green flex items-center justify-center p-4 md:p-6">
+      <div className="max-w-4xl mx-auto text-center space-y-6 md:space-y-8">
         {/* Hero Section */}
         <div className="space-y-6">
           <div className="text-6xl mb-4">📖✨</div>
@@ -61,7 +61,7 @@ export default function Landing({ onConnected }: LandingProps) {
               // Get the first used address or change address
               const walletAddress = info.used?.[0] || info.change;
               console.log("🔍 Extracted wallet address:", walletAddress);
-              onConnected(walletAddress);
+              onConnected(walletAddress, info.walletName);
             }}
           />
           <p className="text-sm text-gray-500">

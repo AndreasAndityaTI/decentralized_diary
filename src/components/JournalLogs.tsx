@@ -5,6 +5,7 @@ interface JournalLogsProps {
   entries: Array<{ entry: DiaryEntry; cid: string }>;
   loading?: boolean;
   onRefresh?: () => void;
+  onDelete?: (cid: string) => void;
 }
 
 const moodEmojis = {
@@ -45,6 +46,7 @@ export default function JournalLogs({
   entries,
   loading = false,
   onRefresh,
+  onDelete,
 }: JournalLogsProps) {
   const [selectedEntry, setSelectedEntry] = useState<{
     entry: DiaryEntry;
@@ -52,7 +54,7 @@ export default function JournalLogs({
   } | null>(null);
 
   return (
-    <div className="flex-1 p-8 space-y-6">
+    <div className="flex-1 p-4 md:p-8 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-800">Journal Logs</h1>
@@ -130,6 +132,21 @@ export default function JournalLogs({
                         <span className="text-sm text-gray-500">
                           {new Date(entry.createdAt).toLocaleDateString()}
                         </span>
+                        {onDelete && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm('Are you sure you want to delete this journal entry?')) {
+                                onDelete(cid);
+                              }
+                            }}
+                            className="flex items-center space-x-1 text-red-500 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded transition-colors text-xs md:text-sm font-medium"
+                            title="Delete entry"
+                          >
+                            <span>🗑️</span>
+                            <span className="hidden sm:inline">Delete</span>
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -157,6 +174,11 @@ export default function JournalLogs({
                           📱 {entry.walletAddress.slice(0, 8)}...{entry.walletAddress.slice(-6)}
                         </span>
                       )}
+                      {entry.walletUsername && !entry.hideWalletUsername && (
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-600">
+                          👤 {entry.walletUsername}
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex items-center justify-end">
@@ -174,19 +196,36 @@ export default function JournalLogs({
 
       {/* Entry Detail Modal */}
       {selectedEntry && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-            <div className="p-6">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-2 md:p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] md:max-h-[80vh] overflow-y-auto">
+            <div className="p-4 md:p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold text-gray-800">
                   {selectedEntry.entry.title}
                 </h2>
-                <button
-                  onClick={() => setSelectedEntry(null)}
-                  className="text-gray-400 hover:text-gray-600 text-2xl"
-                >
-                  ×
-                </button>
+                <div className="flex items-center space-x-2">
+                  {onDelete && (
+                    <button
+                      onClick={() => {
+                        if (window.confirm('Are you sure you want to delete this journal entry?')) {
+                          onDelete(selectedEntry.cid);
+                          setSelectedEntry(null);
+                        }
+                      }}
+                      className="flex items-center space-x-1 text-red-500 hover:text-red-700 hover:bg-red-50 px-2 md:px-3 py-1 rounded transition-colors text-xs md:text-sm font-medium"
+                      title="Delete entry"
+                    >
+                      <span>🗑️</span>
+                      <span className="hidden sm:inline">Delete</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setSelectedEntry(null)}
+                    className="text-gray-400 hover:text-gray-600 text-2xl"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
 
               <div className="flex items-center space-x-4 mb-6">
@@ -210,6 +249,11 @@ export default function JournalLogs({
                   {selectedEntry.entry.walletAddress && !selectedEntry.entry.hideWalletAddress && (
                     <p className="text-sm text-gray-500">
                       📱 {selectedEntry.entry.walletAddress}
+                    </p>
+                  )}
+                  {selectedEntry.entry.walletUsername && !selectedEntry.entry.hideWalletUsername && (
+                    <p className="text-sm text-gray-500">
+                      👤 {selectedEntry.entry.walletUsername}
                     </p>
                   )}
                 </div>

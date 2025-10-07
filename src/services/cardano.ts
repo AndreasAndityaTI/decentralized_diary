@@ -12,7 +12,7 @@ export type WalletAPI = {
   ) => Promise<{ key: string; signature: string }>;
 };
 
-export async function enableWallet(): Promise<WalletAPI | null> {
+export async function enableWallet(): Promise<{ api: WalletAPI; name: string } | null> {
   const anyWin = window as any;
   const wallets = ["eternl", "nami", "lace"];
 
@@ -29,7 +29,7 @@ export async function enableWallet(): Promise<WalletAPI | null> {
           // Still need to call enable() to get the actual API object
           const api: WalletAPI = await anyWin.cardano[w].enable();
           console.log(`Got fresh API for already enabled wallet ${w}`, api);
-          return api;
+          return { api, name: w };
         }
 
         const api: WalletAPI = await anyWin.cardano[w].enable();
@@ -39,7 +39,7 @@ export async function enableWallet(): Promise<WalletAPI | null> {
         // Wait for wallet to be fully ready after enable
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
-        return api;
+        return { api, name: w };
       } catch (error) {
         console.error(`Failed to enable wallet ${w}:`, error);
         // Continue to next wallet
@@ -50,7 +50,7 @@ export async function enableWallet(): Promise<WalletAPI | null> {
   return null;
 }
 
-export async function getWalletInfo(api: WalletAPI) {
+export async function getWalletInfo(api: WalletAPI, walletName: string) {
   console.log("Getting wallet info from API:", api);
   console.log("API methods available:", Object.keys(api));
 
@@ -67,7 +67,7 @@ export async function getWalletInfo(api: WalletAPI) {
     const used = await api.getUsedAddresses();
     const unused = await api.getUnusedAddresses();
     const change = await api.getChangeAddress();
-    return { networkId, used, unused, change };
+    return { networkId, used, unused, change, walletName };
   } catch (error) {
     console.error("Error getting wallet info:", error);
 
@@ -89,7 +89,7 @@ export async function getWalletInfo(api: WalletAPI) {
           const used = await freshApi.getUsedAddresses();
           const unused = await freshApi.getUnusedAddresses();
           const change = await freshApi.getChangeAddress();
-          return { networkId, used, unused, change };
+          return { networkId, used, unused, change, walletName };
         }
       }
     }

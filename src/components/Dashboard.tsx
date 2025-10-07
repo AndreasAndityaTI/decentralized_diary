@@ -8,6 +8,7 @@ interface DashboardProps {
   loading?: boolean;
   onRefresh?: () => void;
   walletAddress?: string;
+  walletName?: string;
 }
 
 const moodEmojis = {
@@ -33,6 +34,7 @@ export default function Dashboard({
   loading = false,
   onRefresh,
   walletAddress,
+  walletName,
 }: DashboardProps) {
   console.log("🔍 Dashboard received walletAddress:", walletAddress);
   const todayEntry = entries.find(({ entry }) => {
@@ -41,7 +43,7 @@ export default function Dashboard({
   });
 
   return (
-    <div className="flex-1 p-8 space-y-6">
+    <div className="flex-1 p-4 md:p-8 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -91,7 +93,7 @@ export default function Dashboard({
       )}
 
       {/* Writing Form */}
-      <DiaryForm onPublished={onPublish} walletAddress={walletAddress} />
+      <DiaryForm onPublished={onPublish} walletAddress={walletAddress} walletName={walletName} />
     </div>
   );
 }

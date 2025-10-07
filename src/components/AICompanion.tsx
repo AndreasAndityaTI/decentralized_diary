@@ -29,9 +29,9 @@ export default function AICompanion() {
   useEffect(() => {
     (async () => {
       try {
-        const api: WalletAPI | null = await enableWallet();
-        if (!api) return;
-        const info = await getWalletInfo(api);
+        const wallet = await enableWallet();
+        if (!wallet) return;
+        const info = await getWalletInfo(wallet.api, wallet.name);
         const addr = info.change || info.used?.[0] || "unknown";
         setWalletAddr(addr);
         // Load per-wallet count
@@ -106,7 +106,7 @@ export default function AICompanion() {
   };
 
   return (
-    <div className="flex-1 p-8 space-y-6">
+    <div className="flex-1 p-4 md:p-8 space-y-6">
       {/* Header */}
       <div className="flex items-center space-x-4">
         <div className="w-12 h-12 bg-gradient-to-r from-lavender to-sky-blue rounded-full flex items-center justify-center">
@@ -123,7 +123,7 @@ export default function AICompanion() {
       </div>
 
       {/* Chat Container */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 h-[600px] flex flex-col">
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 h-[400px] md:h-[600px] flex flex-col">
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {messages.map((message) => (

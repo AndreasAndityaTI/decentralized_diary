@@ -53,7 +53,7 @@ export default function WalletConnect(props: {
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       console.log("Getting wallet info...");
-      const i = await getWalletInfo(w);
+      const i = await getWalletInfo(w.api, w.name);
       console.log("🔍 Wallet info received:", i);
 
       if (i.networkId !== 0) {
@@ -61,12 +61,12 @@ export default function WalletConnect(props: {
         return;
       }
 
-      setApi(w);
+      setApi(w.api);
       setInfo(i);
       console.log("Wallet connection successful, calling onConnected...");
       console.log("🔍 Calling onConnected with wallet info:", i);
       // Call the parent callback immediately to trigger redirect
-      props.onConnected(w, i);
+      props.onConnected(w.api, i);
     } catch (e: any) {
       console.error("Wallet connection error:", e);
       setError(e?.message || "Wallet connect failed. Please try again.");
@@ -76,7 +76,7 @@ export default function WalletConnect(props: {
   };
 
   return (
-    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200">
+    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 md:p-6 shadow-lg border border-gray-200">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="font-semibold text-lg text-gray-800">

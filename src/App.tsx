@@ -22,12 +22,14 @@ import { fetchEntriesFromIpfs } from "./services/ipfs";
 export default function App() {
   const [connected, setConnected] = React.useState(false);
   const [walletAddress, setWalletAddress] = React.useState<string>("");
+  const [walletName, setWalletName] = React.useState<string>("");
   const [currentPage, setCurrentPage] = React.useState("dashboard");
   const [lastCid, setLastCid] = React.useState<string>("");
   const [entries, setEntries] = React.useState<
     Array<{ entry: DiaryEntry; cid: string }>
   >([]);
   const [loadingEntries, setLoadingEntries] = React.useState(false);
+  const [sidebarOpen, setSidebarOpen] = React.useState(false);
 
   // Load entries live from IPFS on app start
   React.useEffect(() => {
@@ -123,6 +125,14 @@ export default function App() {
     }
   };
 
+  // Function to delete a specific entry
+  const deleteEntry = (cidToDelete: string) => {
+    setEntries((prev) => prev.filter(({ cid }) => cid !== cidToDelete));
+    // Remove from localStorage
+    const cids = getStoredCids().filter(cid => cid !== cidToDelete);
+    localStorage.setItem('diaryCids', JSON.stringify(cids));
+  };
+
   // Function to clear all entries (useful for testing)
   const clearAllEntries = () => {
     setEntries([]);
@@ -139,6 +149,7 @@ export default function App() {
             loading={loadingEntries}
             onRefresh={refreshEntries}
             walletAddress={walletAddress}
+            walletName={walletName}
           />
         );
       case "journal":
@@ -147,6 +158,7 @@ export default function App() {
             entries={entries}
             loading={loadingEntries}
             onRefresh={refreshEntries}
+            onDelete={deleteEntry}
           />
         );
       case "trends":
@@ -161,10 +173,10 @@ export default function App() {
         return <Profile />;
       case "settings":
         return (
-          <div className="flex-1 p-8">
-            <h1 className="text-3xl font-bold text-gray-800 mb-6">Settings</h1>
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+          <div className="flex-1 p-4 md:p-8">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6">Settings</h1>
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 md:p-6 shadow-lg border border-gray-200">
+              <h2 className="text-lg md:text-xl font-semibold text-gray-800 mb-4">
                 Account Settings
               </h2>
               <p className="text-gray-600">Settings coming soon...</p>
@@ -176,11 +188,13 @@ export default function App() {
     }
   };
 
-  const handleWalletConnected = (address: string) => {
+  const handleWalletConnected = (address: string, name: string) => {
     console.log("Wallet connected, redirecting to dashboard...");
     console.log("Wallet address:", address);
-    console.log("Setting wallet address state...");
+    console.log("Wallet name:", name);
+    console.log("Setting wallet address and name state...");
     setWalletAddress(address);
+    setWalletName(name);
     setConnected(true);
   };
 
@@ -201,8 +215,13 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-lavender/10 via-sky-blue/10 to-mint-green/10">
       <div className="flex">
-        <Sidebar currentPage={currentPage} onPageChange={setCurrentPage} />
-        <main className="flex-1">{renderPage()}</main>
+        <Sidebar
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
+          isOpen={sidebarOpen}
+          onToggle={() => setSidebarOpen(!sidebarOpen)}
+        />
+        <main className="flex-1 md:ml-0">{renderPage()}</main>
       </div>
 
       {/* OnChain Note - removed as requested */}
