@@ -66,42 +66,53 @@ This app uses NMKR for Cardano NFT minting. Follow these steps to set up your NM
 4. Name your project (e.g., "DeDiary NFTs")
 5. Click "Create Project"
 
-### 3. Create NFT Collection
+### 3. Configure Custom Policy
+1. In your project, select "New Policy" (not existing policy)
+2. Upload your policy script: `native_policy.script`
+3. Upload your verification key: `first_journal_policy.vkey`
+4. Upload your signing key: `first_journal_policy.skey`
+5. NMKR will validate and deploy your custom policy
+6. The policy ID will be: `b402a071c9ec56729897dc08b56b3dee9ccf95e932c7f8d271c4ffd7`
+
+### 4. Create NFT Template
 1. In your project, click "Create NFT"
 2. Upload NFT image/artwork
 3. Set NFT details:
    - **Name**: "First Journal NFT"
    - **Description**: "NFT representing the first journal entry on the decentralized diary"
-   - **Quantity**: Set to unlimited or a high number (e.g., 1000)
+   - **Quantity**: Set to unlimited (minting controlled by your policy)
    - **Royalty**: Optional (e.g., 5%)
 4. Configure metadata:
    - Add attributes like "Category: Journaling"
    - Set external URL if needed
 5. Save and publish the NFT
 
-### 4. Get API Credentials
+### 5. Get API Credentials
 1. In NMKR Studio, go to "Settings" → "API Keys"
-2. Create a new API key
+2. Create a new API key for your project
 3. Copy the following values:
-   - **API Key**: Your API key (looks like `4760cd64b8044f61a11a5d0a3eea9ea4`)
-   - **Project UID**: Your project ID (looks like `1186a714-224c-4c08-80cc-3bc55a6c6698`)
-   - **NFT UID**: Your NFT ID (looks like `b56c9f9e-093d-41cf-818b-89b156b08f95`)
+   - **API Key**: Your API key (long alphanumeric string)
+   - **Project UID**: Your project ID (UUID format)
 
-### 5. Update Code Configuration
+### 5. Custom Policy Integration
+This project uses a **custom native script policy** deployed on Cardano preprod, giving you full control over NFT minting rules:
+
+- **Policy ID**: `b402a071c9ec56729897dc08b56b3dee9ccf95e932c7f8d271c4ffd7`
+- **Script Type**: Native signature policy requiring authorized key signatures
+- **Control**: Only holders of the verification key can authorize NFT minting
+- **Integration**: Connected to NMKR for seamless wallet-based minting
+
+### 6. Update Code Configuration
 1. Open `src/services/cardano.ts`
-2. Find the NMKR configuration section:
+2. Find the NMKR configuration section and update with your credentials:
 ```typescript
-// NMKR project configuration
-const POLICY_ID = "741f480a059f581fe6250375077d304401732d661a22a15aa7509ed8";
-const NMKR_PROJECT_UID = "1186a714-224c-4c08-80cc-3bc55a6c6698";
-const NMKR_NFT_UID = "b56c9f9e-093d-41cf-818b-89b156b08f95";
-const NMKR_API_KEY = "4760cd64b8044f61a11a5d0a3eea9ea4";
+// NMKR project configuration - Native policy project
+const POLICY_ID = "b402a071c9ec56729897dc08b56b3dee9ccf95e932c7f8d271c4ffd7";
+const NMKR_PROJECT_UID = "YOUR_PROJECT_UID_HERE";
+const NMKR_API_KEY = "YOUR_API_KEY_HERE";
 ```
-3. Replace the values with your NMKR credentials:
-   - Keep `POLICY_ID` as is (this is the minting policy)
-   - Update `NMKR_PROJECT_UID` with your project ID
-   - Update `NMKR_NFT_UID` with your NFT ID
-   - Update `NMKR_API_KEY` with your API key
+3. Replace the placeholder values with your actual NMKR project credentials
+4. The policy ID is already set to your deployed smart contract
 
 ### 6. Test NFT Minting
 1. Start the app: `npm run dev`
@@ -117,6 +128,31 @@ const NMKR_API_KEY = "4760cd64b8044f61a11a5d0a3eea9ea4";
 - **Costs**: NFT minting costs ADA (paid by the minter)
 - **Metadata**: NMKR handles CIP-25 metadata automatically
 - **Support**: Check [NMKR Documentation](https://docs.nmkr.io/) for help
+
+## 🎯 Smart Contract Deployment
+
+This project now includes a **deployed native script smart contract** for NFT minting, integrated with NMKR on Cardano preprod testnet.
+
+### Contract Details
+- **Type**: Native Script (key-based signature policy)
+- **Policy ID**: `b402a071c9ec56729897dc08b56b3dee9ccf95e932c7f8d271c4ffd7`
+- **Requirements**: Requires signature from verification key for all minting transactions
+- **Platform**: NMKR Studio (Cardano preprod testnet)
+
+### Deployment Link
+View the deployed contract on CardanoScan:
+**[https://preprod.cardanoscan.io/tokenPolicy/b402a071c9ec56729897dc08b56b3dee9ccf95e932c7f8d271c4ffd7](https://preprod.cardanoscan.io/tokenPolicy/b402a071c9ec56729897dc08b56b3dee9ccf95e932c7f8d271c4ffd7)**
+
+### How It Works
+- **On-Chain Validation**: Every NFT minting transaction is validated by the smart contract
+- **Signature Required**: Only authorized key holders can mint NFTs
+- **NMKR Integration**: Minting happens through NMKR's platform with contract enforcement
+- **Wallet Signing**: Users sign transactions through their Cardano wallet
+
+### Files
+- `native_policy.script` - The deployed native script
+- `first_journal_policy.vkey` - Verification key
+- `first_journal_policy.skey` - Signing key (keep secure)
 
 3. Run dev server:
 
