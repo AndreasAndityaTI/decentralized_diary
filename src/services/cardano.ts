@@ -250,10 +250,10 @@ export async function mintFirstJournalNFT(
 ): Promise<string> {
   console.log('🎨 Starting NMKR NFT minting process...');
 
-  // NMKR project configuration
-  const POLICY_ID = "741f480a059f581fe6250375077d304401732d661a22a15aa7509ed8";
-  const NMKR_PROJECT_UID = "1186a714-224c-4c08-80cc-3bc55a6c6698";
-  const NMKR_API_KEY = "4760cd64b8044f61a11a5d0a3eea9ea4";
+  // NMKR project configuration - Native policy project
+  const POLICY_ID = "b402a071c9ec56729897dc08b56b3dee9ccf95e932c7f8d271c4ffd7"; // Native policy ID
+  const NMKR_PROJECT_UID = "4c0d8492-90b1-40c8-b634-bbd03a59ac16"; // Native policy project
+  const NMKR_API_KEY = "4760cd64b8044f61a11a5d0a3eea9ea4"; // API key
 
   try {
     console.log('🔍 Checking wallet connection...');

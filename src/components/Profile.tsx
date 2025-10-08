@@ -65,7 +65,7 @@ export default function Profile({ entries, walletAddress, walletApi }: ProfilePr
 
 
       {/* Mint First Journal NFT - Only show for first entry and if not already minted */}
-      {entries.length === 1 && !walletNFTs.some(nft => nft.policyId === '741f480a059f581fe6250375077d304401732d661a22a15aa7509ed8') && (
+      {entries.length === 1 && !walletNFTs.some(nft => nft.policyId === 'b402a071c9ec56729897dc08b56b3dee9ccf95e932c7f8d271c4ffd7') && (
         <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
