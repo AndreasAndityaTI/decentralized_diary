@@ -168,9 +168,7 @@ export async function getWalletNFTs(api: WalletAPI): Promise<Array<{
   }
 
   const utxoHexes = await api.getUtxos();
-  console.log('🔍 Raw UTXO hexes from wallet:', utxoHexes);
   if (!utxoHexes || utxoHexes.length === 0) {
-    console.log('⚠️ No UTXOs returned from wallet');
     return [];
   }
 
@@ -184,8 +182,6 @@ export async function getWalletNFTs(api: WalletAPI): Promise<Array<{
 
   for (const utxoHex of utxoHexes) {
     try {
-      console.log('🔍 Processing UTXO hex:', utxoHex);
-
       // Decode CBOR UTXO
       const utxoBytes = hexToBytes(utxoHex);
       const utxo = cardanoLib.TransactionUnspentOutput.from_bytes(utxoBytes);
@@ -193,7 +189,6 @@ export async function getWalletNFTs(api: WalletAPI): Promise<Array<{
       // Get transaction input (contains tx hash and index)
       const input = utxo.input();
       const txHash = bytesToHex(input.transaction_id().to_bytes());
-      console.log('🔍 txHash:', txHash);
 
       // Get output (contains amount and assets)
       const output = utxo.output();
@@ -206,7 +201,6 @@ export async function getWalletNFTs(api: WalletAPI): Promise<Array<{
         for (let i = 0; i < policyKeys.len(); i++) {
           const policyId = policyKeys.get(i);
           const policyIdHex = bytesToHex(policyId.to_bytes());
-          console.log('🔍 policyId:', policyIdHex);
 
           const assets = multiAsset.get(policyId);
           if (assets) {
@@ -216,15 +210,11 @@ export async function getWalletNFTs(api: WalletAPI): Promise<Array<{
               const assetNameHex = bytesToHex(assetName.to_bytes());
               const assetAmount = assets.get(assetName);
 
-              console.log('🔍 assetNameHex:', assetNameHex, 'amount:', assetAmount?.to_str());
-
               // Convert hex asset name to string if possible
               let assetNameStr = assetNameHex;
               try {
                 assetNameStr = hexToString(assetNameHex);
-                console.log('🔍 Converted assetName:', assetNameStr);
-              } catch (error) {
-                console.log('⚠️ Failed to convert hex asset name:', error);
+              } catch {
                 // Keep as hex if conversion fails
               }
 
@@ -234,17 +224,14 @@ export async function getWalletNFTs(api: WalletAPI): Promise<Array<{
                 txHash,
                 amount: parseInt(assetAmount?.to_str() || '1')
               });
-              console.log('✅ Added NFT:', { policyId: policyIdHex, assetName: assetNameStr, txHash, amount: parseInt(assetAmount?.to_str() || '1') });
             }
           }
         }
       }
     } catch (error) {
-      console.error('⚠️ Failed to parse UTXO:', utxoHex, error);
+      // Skip invalid UTXOs
     }
   }
-
-  console.log('🎨 Found NFTs:', nfts);
   return nfts;
 }
 
@@ -264,7 +251,7 @@ export async function mintFirstJournalNFT(
   console.log('🎨 Starting NMKR NFT minting process...');
 
   // NMKR project configuration
-  const POLICY_ID = "def68337867cb4f1f95b6b811fedbfcdd7780d10a95cc072077088ea";
+  const POLICY_ID = "741f480a059f581fe6250375077d304401732d661a22a15aa7509ed8";
   const NMKR_PROJECT_UID = "1186a714-224c-4c08-80cc-3bc55a6c6698";
   const NMKR_API_KEY = "4760cd64b8044f61a11a5d0a3eea9ea4";
 
@@ -326,8 +313,7 @@ export async function mintFirstJournalNFT(
     }
 
     const nmkrResult = await nmkrResponse.json();
-    console.log('✅ NMKR minting initiated:', nmkrResult);
-    console.log('🔍 Full NMKR response:', JSON.stringify(nmkrResult, null, 2));
+    console.log('Minting request sent to NMKR');
 
     // NMKR minting is asynchronous - get the NFT ID and poll for status
     const sendedNft = nmkrResult.sendedNft || [];
@@ -345,7 +331,6 @@ export async function mintFirstJournalNFT(
     }
 
     // Get initial UTXOs before minting starts
-    console.log('🔍 Getting initial wallet UTXOs...');
     let initialUtxoSet = new Set<string>();
     try {
       if (api.getUtxos) {
@@ -355,30 +340,24 @@ export async function mintFirstJournalNFT(
         }
       }
     } catch (error) {
-      console.warn('⚠️ Could not get initial UTXOs:', error);
+      console.warn('Could not get initial UTXOs');
     }
-
-    console.log('🔄 Waiting for NFT to appear in wallet...');
 
     // Wait for new UTXOs with our NFT
     let txHash = '';
     let attempts = 0;
-    const maxAttempts = 30; // 30 seconds max
+    const maxAttempts = 60; // 60 seconds max
 
     while (attempts < maxAttempts && !txHash) {
       try {
-        // Get current UTXOs
-        if (!api.getUtxos) {
-          console.warn('⚠️ Wallet does not support getUtxos');
-          break;
-        }
+        if (!api.getUtxos) break;
+
         const currentUtxos = await api.getUtxos();
         if (currentUtxos) {
           // Find new UTXOs not in initial set
           const newUtxos = currentUtxos.filter(utxo => !initialUtxoSet.has(utxo));
 
           for (const utxo of newUtxos) {
-            // Decode CBOR and check for our NFT
             try {
               const utxoBytes = hexToBytes(utxo);
               const cardanoLib = await loadCardanoLib();
@@ -397,24 +376,24 @@ export async function mintFirstJournalNFT(
                     // Found our policy ID - get the transaction hash
                     const input = utxoObj.input();
                     txHash = bytesToHex(input.transaction_id().to_bytes());
-                    console.log('✅ Found new NFT with our policy! Transaction:', txHash);
+                    console.log('NFT minted! Transaction:', txHash);
                     break;
                   }
                 }
                 if (txHash) break;
               }
-            } catch (error) {
-              console.warn('⚠️ Failed to decode UTXO:', error);
+            } catch {
+              // Skip invalid UTXOs
             }
           }
         }
       } catch (error) {
-        console.warn('⚠️ Wallet check failed:', error);
+        console.warn('Wallet check failed');
       }
 
       if (!txHash) {
         attempts++;
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
 
@@ -423,12 +402,7 @@ export async function mintFirstJournalNFT(
       txHash = `pending_${Date.now()}`;
     }
 
-    console.log('🎉 NFT MINTING REQUEST SENT TO NMKR!');
-    console.log('🔗 Transaction hash:', txHash);
-    console.log('🖼️ NFT Policy ID:', POLICY_ID);
-    console.log('🏷️ NFT Asset Name:', assetName);
-    console.log('📍 Check NMKR dashboard for minting status');
-    console.log('🔄 Using random minting from project');
+    console.log('NFT minted successfully! Transaction:', txHash);
 
     return txHash;
 
