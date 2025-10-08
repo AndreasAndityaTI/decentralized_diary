@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 interface ProfileProps {
   entries: any[];
@@ -17,6 +17,35 @@ export default function Profile({ entries, walletAddress, walletApi }: ProfilePr
     txHash: string;
     mintedDate: string;
   }>>([]);
+  const [walletNFTs, setWalletNFTs] = useState<Array<{
+    policyId: string;
+    assetName: string;
+    txHash: string;
+    amount: number;
+  }>>([]);
+  const [loadingNFTs, setLoadingNFTs] = useState(false);
+
+  // Fetch wallet NFTs on component mount
+  useEffect(() => {
+    if (walletApi && walletAddress) {
+      fetchWalletNFTs();
+    }
+  }, [walletApi, walletAddress]);
+
+  const fetchWalletNFTs = async () => {
+    if (!walletApi) return;
+
+    setLoadingNFTs(true);
+    try {
+      const { getWalletNFTs } = await import("../services/cardano");
+      const nfts = await getWalletNFTs(walletApi);
+      setWalletNFTs(nfts);
+    } catch (error) {
+      console.error("Failed to fetch wallet NFTs:", error);
+    } finally {
+      setLoadingNFTs(false);
+    }
+  };
 
 
   return (
@@ -108,25 +137,35 @@ export default function Profile({ entries, walletAddress, walletApi }: ProfilePr
 
 
 
-      {/* Minted NFTs Display */}
-      {mintedNFTs.length > 0 && (
-        <div className="bg-gradient-to-r from-green-500 to-teal-500 rounded-2xl p-6 text-white">
-          <h3 className="text-xl font-bold mb-4">🎨 Your Minted NFTs</h3>
+      {/* Wallet NFTs Display */}
+      <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl p-6 text-white">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold">🎨 Your Wallet NFTs</h3>
+          <button
+            onClick={fetchWalletNFTs}
+            disabled={loadingNFTs}
+            className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-all duration-200 text-sm font-medium disabled:opacity-50"
+          >
+            {loadingNFTs ? "Loading..." : "🔄 Refresh"}
+          </button>
+        </div>
+
+        {walletNFTs.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {mintedNFTs.map((nft) => (
+            {walletNFTs.map((nft, index) => (
               <div
-                key={nft.id}
+                key={`${nft.policyId}-${nft.assetName}-${index}`}
                 className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/30"
               >
                 <div className="text-center mb-3">
-                  <div className="text-4xl mb-2">{nft.image}</div>
-                  <h4 className="font-semibold text-lg">{nft.name}</h4>
-                  <p className="text-sm opacity-80">{nft.description}</p>
+                  <div className="text-4xl mb-2">🎨</div>
+                  <h4 className="font-semibold text-lg">{nft.assetName}</h4>
+                  <p className="text-sm opacity-80">Policy: {nft.policyId.substring(0, 20)}...</p>
                 </div>
                 <div className="space-y-2 text-xs">
                   <div className="flex justify-between">
-                    <span>Minted:</span>
-                    <span className="font-medium">{nft.mintedDate}</span>
+                    <span>Amount:</span>
+                    <span className="font-medium">{nft.amount}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Transaction:</span>
@@ -140,15 +179,22 @@ export default function Profile({ entries, walletAddress, walletApi }: ProfilePr
                     const scannerUrl = `https://preprod.cardanoscan.io/transaction/${nft.txHash}`;
                     window.open(scannerUrl, '_blank');
                   }}
-                  className="w-full mt-3 px-4 py-2 bg-white text-green-600 rounded-lg hover:bg-gray-100 transition-all duration-200 text-sm font-medium"
+                  className="w-full mt-3 px-4 py-2 bg-white text-purple-600 rounded-lg hover:bg-gray-100 transition-all duration-200 text-sm font-medium"
                 >
                   🔍 View Transaction
                 </button>
               </div>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="text-center py-8">
+            <div className="text-4xl mb-4">🎨</div>
+            <p className="text-white/80">
+              {loadingNFTs ? "Loading your NFTs..." : "No NFTs found in your wallet"}
+            </p>
+          </div>
+        )}
+      </div>
 
       {/* Debug Section */}
       <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">

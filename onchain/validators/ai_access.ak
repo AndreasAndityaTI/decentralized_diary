@@ -1,8 +1,6 @@
 use aiken/tx
 use aiken/tx/context.{ScriptContext}
 
-// Simple spending validator that allows spending if signed by owner
-
 pub type Datum {
   Datum {
     owner: ByteArray,
@@ -10,7 +8,7 @@ pub type Datum {
 }
 
 pub type Redeemer {
-  Spend
+  Access
 }
 
 fn contains_signer(owner: ByteArray, sigs: List<ByteArray>) -> Bool {
