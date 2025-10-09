@@ -1,19 +1,40 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { generateAIReply } from "../services/ai";
 import { enableWallet, getWalletInfo, type WalletAPI, payForAISubscription } from "../services/cardano";
+import { getCookie, setCookieWithExpiry } from "../services/cookies";
 
 export default function AICompanion(props: {
   walletApi?: any;
   walletAddress?: string;
 }) {
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      text: "Hello! I'm your AI writing companion. I'm here to help you reflect on your day, organize your thoughts, and provide emotional support. What's on your mind?",
-      isAI: true,
-      timestamp: new Date(),
-    },
-  ]);
+  // Load messages from cookies or use default welcome message
+  const loadMessagesFromCookies = () => {
+    try {
+      const cookieData = getCookie('ai_chat_messages');
+      if (cookieData) {
+        const parsedMessages = JSON.parse(cookieData);
+        // Convert timestamp strings back to Date objects
+        return parsedMessages.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }));
+      }
+    } catch (error) {
+      console.warn('Failed to load messages from cookies:', error);
+    }
+
+    // Default welcome message
+    return [
+      {
+        id: 1,
+        text: "Hello! I'm your AI writing companion. I'm here to help you reflect on your day, organize your thoughts, and provide emotional support. What's on your mind?",
+        isAI: true,
+        timestamp: new Date(),
+      },
+    ];
+  };
+
+  const [messages, setMessages] = useState(loadMessagesFromCookies);
   const [inputMessage, setInputMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const walletAddr = props.walletAddress || "unknown";
@@ -43,6 +64,18 @@ export default function AICompanion(props: {
     }
   }, [storageKey, dialogCount]);
 
+  // Save messages to cookies whenever they change
+  useEffect(() => {
+    try {
+      // Only save if there are more messages than just the welcome message
+      if (messages.length > 1) {
+        setCookieWithExpiry('ai_chat_messages', JSON.stringify(messages), 30); // 30 days expiry
+      }
+    } catch (error) {
+      console.warn('Failed to save messages to cookies:', error);
+    }
+  }, [messages]);
+
   const remaining = Math.max(0, dialogLimit - dialogCount);
   const reachedLimit = remaining <= 0;
 
@@ -64,6 +97,28 @@ export default function AICompanion(props: {
       alert(`Subscription failed: ${error.message}`);
     } finally {
       setSubscribing(false);
+    }
+  };
+
+  const clearChatHistory = () => {
+    if (confirm("Are you sure you want to clear all chat history? This action cannot be undone.")) {
+      // Reset to default welcome message
+      const defaultMessages = [
+        {
+          id: 1,
+          text: "Hello! I'm your AI writing companion. I'm here to help you reflect on your day, organize your thoughts, and provide emotional support. What's on your mind?",
+          isAI: true,
+          timestamp: new Date(),
+        },
+      ];
+      setMessages(defaultMessages);
+
+      // Clear the cookie
+      try {
+        document.cookie = 'ai_chat_messages=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      } catch (error) {
+        console.warn('Failed to clear chat cookie:', error);
+      }
     }
   };
 
@@ -118,18 +173,27 @@ export default function AICompanion(props: {
   return (
     <div className="flex-1 p-8 space-y-6">
       {/* Header */}
-      <div className="flex items-center space-x-4">
-        <div className="w-12 h-12 bg-gradient-to-r from-lavender to-sky-blue rounded-full flex items-center justify-center">
-          <span className="text-white text-xl">🤖</span>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <div className="w-12 h-12 bg-gradient-to-r from-lavender to-sky-blue rounded-full flex items-center justify-center">
+            <span className="text-white text-xl">🤖</span>
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">AI Companion</h1>
+            <p className="text-gray-600">
+              Your personal writing and reflection assistant
+            </p>
+            <p className="text-sm text-gray-500">Wallet: {walletAddr === "unknown" ? "not connected" : `${walletAddr.slice(0, 10)}...`}</p>
+            <p className="text-sm text-gray-600">Dialogs remaining: {remaining} / {dialogLimit}</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800">AI Companion</h1>
-          <p className="text-gray-600">
-            Your personal writing and reflection assistant
-          </p>
-          <p className="text-sm text-gray-500">Wallet: {walletAddr === "unknown" ? "not connected" : `${walletAddr.slice(0, 10)}...`}</p>
-          <p className="text-sm text-gray-600">Dialogs remaining: {remaining} / {dialogLimit}</p>
-        </div>
+        <button
+          onClick={clearChatHistory}
+          className="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors text-sm"
+          title="Clear chat history"
+        >
+          🗑️ Clear Chat
+        </button>
       </div>
 
       {/* Chat Container */}
