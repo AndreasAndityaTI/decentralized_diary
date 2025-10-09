@@ -17,6 +17,7 @@ const ipfsService = import("./services/ipfs");
 export default function App() {
   const [connected, setConnected] = React.useState(false);
   const [walletAddress, setWalletAddress] = React.useState<string>("");
+  const [walletUsername, setWalletUsername] = React.useState<string>("");
   const [walletApi, setWalletApi] = React.useState<any>(null);
   const [currentPage, setCurrentPage] = React.useState("dashboard");
   const [lastCid, setLastCid] = React.useState<string>("");
@@ -24,6 +25,7 @@ export default function App() {
     Array<{ entry: DiaryEntry; cid: string }>
   >([]);
   const [loadingEntries, setLoadingEntries] = React.useState(false);
+  const [editingEntry, setEditingEntry] = React.useState<{ entry: DiaryEntry; cid: string } | null>(null);
 
   // Load entries live from IPFS on app start - only after wallet is connected
   React.useEffect(() => {
@@ -136,16 +138,72 @@ export default function App() {
     clearAllCids();
   };
 
+  // Function to edit an entry
+  const handleEditEntry = (entry: DiaryEntry, cid: string) => {
+    setEditingEntry({ entry, cid });
+    setCurrentPage("dashboard"); // Switch to dashboard to show the form
+  };
+
+  // Function to update an entry
+  const handleUpdateEntry = async (updatedEntry: DiaryEntry, oldCid: string, newCid: string) => {
+    try {
+      // Remove old CID and add new one
+      const { removeCid, addCid } = await entriesService;
+      removeCid(oldCid);
+      addCid(newCid);
+
+      // Update state
+      setEntries(prev => prev.map(item =>
+        item.cid === oldCid ? { entry: updatedEntry, cid: newCid } : item
+      ));
+
+      // Clear editing state
+      setEditingEntry(null);
+
+      console.log("Entry updated successfully");
+    } catch (error) {
+      console.error("Failed to update entry:", error);
+      throw error;
+    }
+  };
+
+  // Function to cancel editing
+  const handleCancelEdit = () => {
+    setEditingEntry(null);
+  };
+
+  // Function to delete an entry
+  const handleDeleteEntry = async (cid: string) => {
+    try {
+      // Remove from local storage
+      const { removeCid } = await entriesService;
+      removeCid(cid);
+
+      // Remove from state
+      setEntries(prev => prev.filter(item => item.cid !== cid));
+
+      console.log("Entry deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete entry:", error);
+      throw error;
+    }
+  };
+
   const renderPage = () => {
     switch (currentPage) {
       case "dashboard":
         return (
           <Dashboard
             onPublish={handlePublish}
+            onUpdated={handleUpdateEntry}
+            onCancelEdit={handleCancelEdit}
             entries={entries}
             loading={loadingEntries}
             onRefresh={refreshEntries}
             walletAddress={walletAddress}
+            walletUsername={walletUsername}
+            walletApi={walletApi}
+            entryToEdit={editingEntry}
           />
         );
       case "journal":
@@ -154,12 +212,16 @@ export default function App() {
             entries={entries}
             loading={loadingEntries}
             onRefresh={refreshEntries}
+            walletApi={walletApi}
+            walletAddress={walletAddress}
+            onEdit={handleEditEntry}
+            onDelete={handleDeleteEntry}
           />
         );
       case "trends":
         return <MoodTrends entries={entries} />;
       case "ai-companion":
-        return <AICompanion />;
+        return <AICompanion walletApi={walletApi} walletAddress={walletAddress} />;
       case "dao":
         return <Community />;
       case "profile":
@@ -169,13 +231,15 @@ export default function App() {
     }
   };
 
-  const handleWalletConnected = (api: any, address: string) => {
+  const handleWalletConnected = (api: any, address: string, walletName?: string) => {
     console.log("Wallet connected, redirecting to dashboard...");
     console.log("Wallet API:", api);
     console.log("Wallet address:", address);
+    console.log("Wallet name:", walletName);
     console.log("Setting wallet state...");
     setWalletApi(api);
     setWalletAddress(address);
+    setWalletUsername(walletName || "");
     setConnected(true);
   };
 
@@ -190,7 +254,7 @@ export default function App() {
   }, [walletAddress]);
 
   if (!connected) {
-    return <Landing onConnected={(api, address) => handleWalletConnected(api, address)} />;
+    return <Landing onConnected={(api, address, walletName) => handleWalletConnected(api, address, walletName)} />;
   }
 
   return (

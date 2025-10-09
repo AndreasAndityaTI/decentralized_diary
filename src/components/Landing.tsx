@@ -2,7 +2,7 @@ import React from "react";
 import WalletConnect from "./WalletConnect";
 
 interface LandingProps {
-  onConnected: (api: any, walletAddress: string) => void;
+  onConnected: (api: any, walletAddress: string, walletName?: string) => void;
 }
 
 export default function Landing({ onConnected }: LandingProps) {
@@ -56,12 +56,13 @@ export default function Landing({ onConnected }: LandingProps) {
         {/* CTA Section */}
         <div className="space-y-4">
           <WalletConnect
-            onConnected={(api, info) => {
+            onConnected={(api, info, walletName) => {
               console.log("🔍 Wallet info received:", info);
               // Get the first used address or change address
               const walletAddress = info.used?.[0] || info.change;
               console.log("🔍 Extracted wallet address:", walletAddress);
-              onConnected(api, walletAddress);
+              console.log("🔍 Wallet name:", walletName);
+              onConnected(api, walletAddress, walletName);
             }}
           />
           <p className="text-sm text-gray-500">

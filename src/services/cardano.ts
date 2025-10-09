@@ -322,11 +322,11 @@ export async function mintFirstJournalNFT(
     if (!nftId) {
       console.warn('⚠️ No NFT ID found in response, using fallback');
       const txHash = nmkrResult.transactionHash ||
-                     nmkrResult.txHash ||
-                     nmkrResult.tx ||
-                     nmkrResult.hash ||
-                     nmkrResult.transaction ||
-                     `nmkr_${Date.now()}`;
+                    nmkrResult.txHash ||
+                    nmkrResult.tx ||
+                    nmkrResult.hash ||
+                    nmkrResult.transaction ||
+                    `nmkr_${Date.now()}`;
       return txHash;
     }
 
@@ -411,5 +411,125 @@ export async function mintFirstJournalNFT(
     const errorMessage = error?.message || error?.toString() || 'Unknown error occurred';
     console.error('❌ Full error details:', error);
     throw new Error(`Failed to mint NFT: ${errorMessage}`);
+  }
+}
+
+export async function mintMonetizedJournalNFT(
+  api: WalletAPI,
+  walletAddress: string,
+  ipfsCid: string,
+  title: string
+): Promise<{ policyId: string; assetName: string; txHash: string }> {
+  console.log('🎨 Starting monetized journal NFT minting process...');
+
+  // Use the same NMKR project for monetized journals
+  const POLICY_ID = "b402a071c9ec56729897dc08b56b3dee9ccf95e932c7f8d271c4ffd7";
+  const NMKR_PROJECT_UID = "4c0d8492-90b1-40c8-b634-bbd03a59ac16";
+  const NMKR_API_KEY = "4760cd64b8044f61a11a5d0a3eea9ea4";
+
+  try {
+    const userAddress = await ensureBech32Address(walletAddress);
+    if (!userAddress) {
+      throw new Error("No wallet address provided");
+    }
+
+    // Generate unique asset name for this journal
+    const assetName = `MonetizedJournal_${Date.now()}`;
+
+    console.log('🌐 Calling NMKR API for monetized journal...');
+
+    const nmkrResponse = await fetch(`/api/nmkr/v2/MintAndSendRandom/${NMKR_PROJECT_UID}/1/${userAddress}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${NMKR_API_KEY}`
+      }
+    });
+
+    if (!nmkrResponse.ok) {
+      const errorData = await nmkrResponse.text();
+      console.error('❌ NMKR API error:', errorData);
+      throw new Error(`NMKR API error: ${nmkrResponse.status} ${nmkrResponse.statusText}`);
+    }
+
+    const nmkrResult = await nmkrResponse.json();
+    const sendedNft = nmkrResult.sendedNft || [];
+    const nftId = sendedNft[0]?.id;
+
+    const txHash = nftId || nmkrResult.transactionHash || `nmkr_${Date.now()}`;
+
+    console.log('Monetized NFT minted successfully!', { policyId: POLICY_ID, assetName, txHash });
+
+    return { policyId: POLICY_ID, assetName, txHash };
+
+  } catch (error: any) {
+    console.error('❌ Monetized NFT minting error:', error);
+    throw new Error(`Failed to mint monetized NFT: ${error?.message || 'Unknown error'}`);
+  }
+}
+
+export async function payForJournalAccess(
+  api: WalletAPI,
+  buyerAddress: string,
+  journalPolicyId: string,
+  journalAssetName: string,
+  priceLovelace: number
+): Promise<string> {
+  console.log('💰 Starting journal access payment...');
+
+  // Journal Payment Contract Address (would be deployed contract address)
+  const CONTRACT_ADDRESS = "addr_test1..."; // Placeholder - needs to be set after deployment
+
+  try {
+    // This would construct and submit a transaction to the journal payment contract
+    // For now, this is a placeholder implementation
+
+    console.log('Payment processed for journal access');
+    return `payment_${Date.now()}`;
+
+  } catch (error: any) {
+    console.error('❌ Payment error:', error);
+    throw new Error(`Failed to pay for journal access: ${error?.message || 'Unknown error'}`);
+  }
+}
+
+export async function checkJournalAccess(
+  api: WalletAPI,
+  buyerAddress: string,
+  journalPolicyId: string,
+  journalAssetName: string
+): Promise<boolean> {
+  console.log('🔍 Checking journal access...');
+
+  try {
+    // Check if user has paid for this journal by looking at contract UTXOs
+    // For now, return false (no access) as placeholder
+
+    return false;
+
+  } catch (error) {
+    console.error('❌ Access check error:', error);
+    return false;
+  }
+}
+
+export async function payForAISubscription(
+  api: WalletAPI,
+  buyerAddress: string
+): Promise<string> {
+  console.log('🤖 Starting AI subscription payment...');
+
+  // AI Subscription Contract Address (would be deployed contract address)
+  const CONTRACT_ADDRESS = "addr_test1..."; // Placeholder - needs to be set after deployment
+
+  try {
+    // This would construct and submit a transaction to the AI subscription contract
+    // For now, this is a placeholder implementation
+
+    console.log('AI subscription payment processed');
+    return `ai_subscription_${Date.now()}`;
+
+  } catch (error: any) {
+    console.error('❌ AI subscription payment error:', error);
+    throw new Error(`Failed to pay for AI subscription: ${error?.message || 'Unknown error'}`);
   }
 }

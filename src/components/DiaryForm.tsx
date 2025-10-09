@@ -1,6 +1,7 @@
 import React from "react";
 import { classifySentiment } from "../services/sentiment";
 import { uploadJsonToIpfs, extractDiaryMetadata } from "../services/ipfs";
+import { mintMonetizedJournalNFT } from "../services/cardano";
 
 export type DiaryEntry = {
   title: string;
@@ -8,8 +9,16 @@ export type DiaryEntry = {
   createdAt: string;
   mood?: string;
   walletAddress?: string;
+  walletUsername?: string;
   location?: string;
   hideWalletAddress?: boolean;
+  hideWalletUsername?: boolean;
+  overrideMood?: string;
+  isMonetized?: boolean;
+  nftPolicyId?: string;
+  nftAssetName?: string;
+  nftTxHash?: string;
+  secretHistory?: string;
 };
 
 const moodEmojis = {
@@ -31,13 +40,22 @@ const moodEmojis = {
 
 export default function DiaryForm(props: {
   onPublished: (entry: DiaryEntry, ipfsCid: string) => void;
+  onUpdated?: (entry: DiaryEntry, oldCid: string, newCid: string) => void;
   walletAddress?: string;
+  walletUsername?: string;
+  walletApi?: any;
+  existingEntries?: Array<{ entry: DiaryEntry; cid: string }>;
+  entryToEdit?: { entry: DiaryEntry; cid: string };
 }) {
-  const [title, setTitle] = React.useState("");
-  const [content, setContent] = React.useState("");
-  const [mood, setMood] = React.useState<string | null>(null);
-  const [location, setLocation] = React.useState("");
-  const [hideWalletAddress, setHideWalletAddress] = React.useState(false);
+  const isEditing = !!props.entryToEdit;
+  const [title, setTitle] = React.useState(props.entryToEdit?.entry.title || "");
+  const [content, setContent] = React.useState(props.entryToEdit?.entry.content || "");
+  const [mood, setMood] = React.useState<string | null>(props.entryToEdit?.entry.mood || null);
+  const [overrideMood, setOverrideMood] = React.useState<string>(props.entryToEdit?.entry.overrideMood || "");
+  const [location, setLocation] = React.useState(props.entryToEdit?.entry.location || "");
+  const [hideWalletAddress, setHideWalletAddress] = React.useState(props.entryToEdit?.entry.hideWalletAddress || false);
+  const [hideWalletUsername, setHideWalletUsername] = React.useState(props.entryToEdit?.entry.hideWalletUsername || false);
+  const [isMonetized, setIsMonetized] = React.useState(props.entryToEdit?.entry.isMonetized || false);
   const [countries, setCountries] = React.useState<Array<{ name: string; code: string }>>([]);
   const [loadingCountries, setLoadingCountries] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
@@ -84,6 +102,24 @@ export default function DiaryForm(props: {
     } finally {
       setAnalyzing(false);
     }
+  };
+
+  const generateSecretHistory = (): string => {
+    if (!props.existingEntries || props.existingEntries.length === 0) {
+      return "";
+    }
+
+    // Create a chronological history of all previous entries
+    const historyEntries = props.existingEntries
+      .sort((a, b) => new Date(a.entry.createdAt).getTime() - new Date(b.entry.createdAt).getTime())
+      .map(({ entry }) => ({
+        date: new Date(entry.createdAt).toLocaleDateString(),
+        title: entry.title,
+        mood: entry.mood,
+        summary: entry.content.substring(0, 100) + (entry.content.length > 100 ? "..." : "")
+      }));
+
+    return JSON.stringify(historyEntries);
   };
 
   const generateRecommendations = (
@@ -333,18 +369,46 @@ export default function DiaryForm(props: {
     setShowRecommendations(true);
   };
 
-  const publish = async () => {
+  const handleSubmit = async () => {
     try {
       setError("");
       setLoading(true);
+
+      // Generate secret history from existing entries
+      const secretHistory = generateSecretHistory();
+
+      let nftInfo = undefined;
+      if (isMonetized && props.walletApi && props.walletAddress) {
+        console.log("🎨 Minting NFT for monetized journal...");
+        try {
+          nftInfo = await mintMonetizedJournalNFT(
+            props.walletApi,
+            props.walletAddress,
+            "", // We'll set IPFS CID after upload
+            title
+          );
+          console.log("✅ NFT minted:", nftInfo);
+        } catch (nftError) {
+          console.warn("⚠️ NFT minting failed, proceeding without NFT:", nftError);
+        }
+      }
+
       const entry: DiaryEntry = {
         title,
         content,
         createdAt: new Date().toISOString(),
-        mood: mood || undefined,
-        walletAddress: props.walletAddress,
+        mood: overrideMood || mood || undefined,
+        walletAddress: hideWalletAddress ? undefined : props.walletAddress,
+        walletUsername: hideWalletUsername ? undefined : props.walletUsername,
         location: location || undefined,
         hideWalletAddress,
+        hideWalletUsername,
+        overrideMood: overrideMood || undefined,
+        isMonetized,
+        nftPolicyId: nftInfo?.policyId,
+        nftAssetName: nftInfo?.assetName,
+        nftTxHash: nftInfo?.txHash,
+        secretHistory,
       };
 
       // Extract metadata for Pinata
@@ -359,7 +423,11 @@ export default function DiaryForm(props: {
         url: ipfs.url,
       });
 
-      props.onPublished(entry, ipfs.cid);
+      if (isEditing && props.onUpdated && props.entryToEdit) {
+        props.onUpdated(entry, props.entryToEdit.cid, ipfs.cid);
+      } else {
+        props.onPublished(entry, ipfs.cid);
+      }
     } catch (e: any) {
       setError(
         e?.message ||
@@ -452,6 +520,79 @@ export default function DiaryForm(props: {
             </p>
           </div>
         )}
+
+        {/* Wallet Username Visibility Option */}
+        {props.walletUsername && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">
+              🔒 Wallet Username Visibility
+            </label>
+            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
+              <input
+                type="checkbox"
+                id="hideWalletUsername"
+                checked={hideWalletUsername}
+                onChange={(e) => setHideWalletUsername(e.target.checked)}
+                className="w-4 h-4 text-lavender bg-gray-100 border-gray-300 rounded focus:ring-lavender focus:ring-2"
+              />
+              <label htmlFor="hideWalletUsername" className="text-sm text-gray-700">
+                Hide wallet username from journal entry
+              </label>
+            </div>
+            <p className="text-xs text-gray-500">
+              Your wallet username identifies your wallet provider.
+            </p>
+          </div>
+        )}
+
+        {/* Monetize Journal Option */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700">
+            💰 Monetize Your Journal
+          </label>
+          <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
+            <input
+              type="checkbox"
+              id="isMonetized"
+              checked={isMonetized}
+              onChange={(e) => setIsMonetized(e.target.checked)}
+              className="w-4 h-4 text-lavender bg-gray-100 border-gray-300 rounded focus:ring-lavender focus:ring-2"
+            />
+            <label htmlFor="isMonetized" className="text-sm text-gray-700">
+              Make this journal available for purchase
+            </label>
+          </div>
+          <p className="text-xs text-gray-500">
+            50% for writer, 50% for company
+          </p>
+        </div>
+
+        {/* Override AI Mood Analysis */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700">
+            Override AI mood analysis
+          </label>
+          <select
+            className="w-full border border-gray-300 bg-white text-gray-800 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-lavender"
+            value={overrideMood}
+            onChange={(e) => setOverrideMood(e.target.value)}
+          >
+            <option value="">Use AI analysis</option>
+            <option value="happy">😊 Happy</option>
+            <option value="sad">😢 Sad</option>
+            <option value="angry">😠 Angry</option>
+            <option value="neutral">😐 Neutral</option>
+            <option value="anxious">😰 Anxious</option>
+            <option value="motivated">💪 Motivated</option>
+            <option value="calm">😌 Calm</option>
+            <option value="excited">🤩 Excited</option>
+            <option value="frustrated">😤 Frustrated</option>
+            <option value="grateful">🙏 Grateful</option>
+          </select>
+          <p className="text-xs text-gray-500">
+            Override the AI's mood analysis with your own feeling
+          </p>
+        </div>
       </div>
 
       {/* Mood Analysis */}
@@ -482,11 +623,11 @@ export default function DiaryForm(props: {
 
       <div className="flex justify-end">
         <button
-          onClick={publish}
+          onClick={handleSubmit}
           disabled={loading || analyzing || !title.trim() || !content.trim()}
           className="px-8 py-3 rounded-xl bg-gradient-to-r from-lavender to-sky-blue text-white hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-lg"
         >
-          {loading ? "Saving your story..." : "📖 Save My Story"}
+          {loading ? (isEditing ? "Updating your story..." : "Saving your story...") : (isEditing ? "📝 Update My Story" : "📖 Save My Story")}
         </button>
       </div>
 

@@ -1,8 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { generateAIReply } from "../services/ai";
-import { enableWallet, getWalletInfo, type WalletAPI } from "../services/cardano";
+import { enableWallet, getWalletInfo, type WalletAPI, payForAISubscription } from "../services/cardano";
 
-export default function AICompanion() {
+export default function AICompanion(props: {
+  walletApi?: any;
+  walletAddress?: string;
+}) {
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -13,13 +16,13 @@ export default function AICompanion() {
   ]);
   const [inputMessage, setInputMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [walletAddr, setWalletAddr] = useState<string>("unknown");
+  const walletAddr = props.walletAddress || "unknown";
   const dialogLimit = 3;
 
   const storageKey = useMemo(() => `ai_dialogs:${walletAddr}`, [walletAddr]);
   const [dialogCount, setDialogCount] = useState<number>(() => {
     try {
-      const raw = localStorage.getItem(`ai_dialogs:unknown`);
+      const raw = localStorage.getItem(`ai_dialogs:${walletAddr}`);
       return raw ? parseInt(raw, 10) || 0 : 0;
     } catch {
       return 0;
@@ -27,21 +30,10 @@ export default function AICompanion() {
   });
 
   useEffect(() => {
-    (async () => {
-      try {
-        const api: WalletAPI | null = await enableWallet();
-        if (!api) return;
-        const info = await getWalletInfo(api);
-        const addr = info.change || info.used?.[0] || "unknown";
-        setWalletAddr(addr);
-        // Load per-wallet count
-        const raw = localStorage.getItem(`ai_dialogs:${addr}`);
-        if (raw) setDialogCount(parseInt(raw, 10) || 0);
-      } catch {
-        // ignore - keep unknown
-      }
-    })();
-  }, []);
+    // Load per-wallet count when wallet changes
+    const raw = localStorage.getItem(`ai_dialogs:${walletAddr}`);
+    if (raw) setDialogCount(parseInt(raw, 10) || 0);
+  }, [walletAddr]);
 
   useEffect(() => {
     try {
@@ -93,9 +85,25 @@ export default function AICompanion() {
     }
   };
 
+  const [subscribing, setSubscribing] = useState(false);
+
   const onSubscribe = async () => {
-    // TODO: integrate Cardano payment to subscription validator
-    alert("Subscription required: please complete payment via your Cardano wallet (coming soon)");
+    if (!props.walletApi || !props.walletAddress) {
+      alert("Please connect your wallet first");
+      return;
+    }
+
+    try {
+      setSubscribing(true);
+      await payForAISubscription(props.walletApi, props.walletAddress);
+      alert("Subscription successful! You now have unlimited access to AI Companion.");
+      // Reset dialog count to allow unlimited usage
+      setDialogCount(0);
+    } catch (error: any) {
+      alert(`Subscription failed: ${error.message}`);
+    } finally {
+      setSubscribing(false);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -172,9 +180,10 @@ export default function AICompanion() {
                 <p className="text-gray-600 mb-3">Subscribe to continue using AI Companion.</p>
                 <button
                   onClick={onSubscribe}
-                  className="px-5 py-2 bg-gradient-to-r from-lavender to-sky-blue text-white rounded-lg hover:shadow-lg transition-all duration-200"
+                  disabled={subscribing}
+                  className="px-5 py-2 bg-gradient-to-r from-lavender to-sky-blue text-white rounded-lg hover:shadow-lg transition-all duration-200 disabled:opacity-50"
                 >
-                  Subscribe with Cardano
+                  {subscribing ? "Processing..." : "Subscribe with Cardano"}
                 </button>
               </div>
             </div>

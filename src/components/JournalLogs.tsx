@@ -1,10 +1,15 @@
 import React, { useState } from "react";
 import { DiaryEntry } from "./DiaryForm";
+import { payForJournalAccess } from "../services/cardano";
 
 interface JournalLogsProps {
   entries: Array<{ entry: DiaryEntry; cid: string }>;
   loading?: boolean;
   onRefresh?: () => void;
+  walletApi?: any;
+  walletAddress?: string;
+  onEdit?: (entry: DiaryEntry, cid: string) => void;
+  onDelete?: (cid: string) => void;
 }
 
 const moodEmojis = {
@@ -45,11 +50,63 @@ export default function JournalLogs({
   entries,
   loading = false,
   onRefresh,
+  walletApi,
+  walletAddress,
+  onEdit,
+  onDelete,
 }: JournalLogsProps) {
   const [selectedEntry, setSelectedEntry] = useState<{
     entry: DiaryEntry;
     cid: string;
   } | null>(null);
+  const [paying, setPaying] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  const isAuthor = (entry: DiaryEntry) => {
+    return entry.walletAddress === walletAddress;
+  };
+
+  const handleDelete = async (cid: string) => {
+    if (!onDelete) return;
+
+    if (!confirm("Are you sure you want to delete this journal entry?")) return;
+
+    try {
+      setDeleting(cid);
+      await onDelete(cid);
+      if (onRefresh) onRefresh();
+    } catch (error) {
+      alert("Failed to delete entry");
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const handlePayForAccess = async (entry: DiaryEntry) => {
+    if (!walletApi || !walletAddress || !entry.nftPolicyId || !entry.nftAssetName) {
+      alert("Wallet not connected or journal not properly configured");
+      return;
+    }
+
+    try {
+      setPaying(true);
+      const priceLovelace = 5000000; // 5 ADA in lovelace
+      await payForJournalAccess(
+        walletApi,
+        walletAddress,
+        entry.nftPolicyId,
+        entry.nftAssetName,
+        priceLovelace
+      );
+      alert("Payment successful! You now have access to this journal.");
+      // Refresh entries to show unlocked content
+      if (onRefresh) onRefresh();
+    } catch (error: any) {
+      alert(`Payment failed: ${error.message}`);
+    } finally {
+      setPaying(false);
+    }
+  };
 
   return (
     <div className="flex-1 p-8 space-y-6">
@@ -123,6 +180,33 @@ export default function JournalLogs({
                         {entry.title}
                       </h3>
                       <div className="flex items-center space-x-2">
+                        {isAuthor(entry) && (
+                          <div className="flex space-x-1 mr-2">
+                            {onEdit && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onEdit(entry, cid);
+                                }}
+                                className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200"
+                              >
+                                ✏️ Edit
+                              </button>
+                            )}
+                            {onDelete && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDelete(cid);
+                                }}
+                                disabled={deleting === cid}
+                                className="text-xs px-2 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200 disabled:opacity-50"
+                              >
+                                {deleting === cid ? "..." : "🗑️ Delete"}
+                              </button>
+                            )}
+                          </div>
+                        )}
                         <span className="text-2xl">
                           {moodEmojis[entry.mood as keyof typeof moodEmojis] ||
                             "😊"}
@@ -133,9 +217,30 @@ export default function JournalLogs({
                       </div>
                     </div>
 
-                    <p className="text-gray-600 mb-3 line-clamp-3">
-                      {entry.content}
-                    </p>
+                    {entry.isMonetized ? (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3">
+                        <p className="text-yellow-800 text-sm font-medium">
+                          💰 This journal is monetized
+                        </p>
+                        <p className="text-yellow-700 text-xs mt-1">
+                          Pay to unlock the full content
+                        </p>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePayForAccess(entry);
+                          }}
+                          disabled={paying}
+                          className="mt-2 px-3 py-1 bg-yellow-500 text-white text-xs rounded hover:bg-yellow-600 disabled:opacity-50"
+                        >
+                          {paying ? "Processing..." : "Pay 5 ADA"}
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-gray-600 mb-3 line-clamp-3">
+                        {entry.content}
+                      </p>
+                    )}
 
                     {/* AI Summary Chips */}
                     <div className="flex flex-wrap gap-2 mb-3">
@@ -155,6 +260,16 @@ export default function JournalLogs({
                       {entry.walletAddress && !entry.hideWalletAddress && (
                         <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-600">
                           📱 {entry.walletAddress.slice(0, 8)}...{entry.walletAddress.slice(-6)}
+                        </span>
+                      )}
+                      {entry.walletUsername && !entry.hideWalletUsername && (
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-600">
+                          👤 {entry.walletUsername}
+                        </span>
+                      )}
+                      {entry.isMonetized && (
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-600">
+                          💰 Monetized
                         </span>
                       )}
                     </div>
@@ -212,13 +327,45 @@ export default function JournalLogs({
                       📱 {selectedEntry.entry.walletAddress}
                     </p>
                   )}
+                  {selectedEntry.entry.walletUsername && !selectedEntry.entry.hideWalletUsername && (
+                    <p className="text-sm text-gray-500">
+                      👤 {selectedEntry.entry.walletUsername}
+                    </p>
+                  )}
+                  {selectedEntry.entry.isMonetized && (
+                    <p className="text-sm text-green-600 font-medium">
+                      💰 This journal is available for purchase
+                    </p>
+                  )}
                 </div>
               </div>
 
               <div className="prose max-w-none">
-                <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                  {selectedEntry.entry.content}
-                </p>
+                {selectedEntry.entry.isMonetized ? (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+                    <div className="text-4xl mb-4">🔒</div>
+                    <h3 className="text-lg font-semibold text-yellow-800 mb-2">
+                      This Journal is Monetized
+                    </h3>
+                    <p className="text-yellow-700 mb-4">
+                      Pay 5 ADA to unlock the full content and support the writer
+                    </p>
+                    <button
+                      onClick={() => handlePayForAccess(selectedEntry.entry)}
+                      disabled={paying}
+                      className="px-6 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 font-medium disabled:opacity-50"
+                    >
+                      {paying ? "Processing Payment..." : "Pay 5 ADA to Read"}
+                    </button>
+                    <p className="text-xs text-yellow-600 mt-2">
+                      50% goes to the writer, 50% to the platform
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                    {selectedEntry.entry.content}
+                  </p>
+                )}
               </div>
             </div>
           </div>
