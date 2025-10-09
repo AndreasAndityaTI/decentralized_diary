@@ -35,7 +35,6 @@ const moodColors = {
 };
 
 export default function MoodTrends({ entries, publicEntries = [] }: MoodTrendsProps) {
-  const [timeRange, setTimeRange] = useState("week");
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [viewMode, setViewMode] = useState<"personal" | "global">("personal");
@@ -152,26 +151,6 @@ export default function MoodTrends({ entries, publicEntries = [] }: MoodTrendsPr
               🌍 Global
             </button>
           </div>
-          <button
-            onClick={() => setTimeRange("week")}
-            className={`px-4 py-2 rounded-lg transition-all duration-200 ${
-              timeRange === "week"
-                ? "bg-gradient-to-r from-lavender to-sky-blue text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            Week
-          </button>
-          <button
-            onClick={() => setTimeRange("month")}
-            className={`px-4 py-2 rounded-lg transition-all duration-200 ${
-              timeRange === "month"
-                ? "bg-gradient-to-r from-lavender to-sky-blue text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            Month
-          </button>
         </div>
       </div>
 

@@ -197,7 +197,7 @@ export default function Profile({ entries, walletAddress, walletApi }: ProfilePr
       </div>
 
       {/* Debug Section */}
-      <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+      <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-xl" style={{ display: 'none' }}>
         <h3 className="text-lg font-semibold text-yellow-800 mb-2">
           🔧 Debug Tools
         </h3>

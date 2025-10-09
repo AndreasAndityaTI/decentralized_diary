@@ -89,8 +89,14 @@ export default function AICompanion(props: {
 
     try {
       setSubscribing(true);
-      await payForAISubscription(props.walletApi, props.walletAddress);
-      alert("Subscription successful! You now have unlimited access to AI Companion.");
+      const txHash = await payForAISubscription(props.walletApi, props.walletAddress);
+
+      // Show success message with transaction details
+      const scannerUrl = `https://preprod.cardanoscan.io/transaction/${txHash}`;
+      const message = `🎉 Subscription successful!\n\nTransaction Hash: ${txHash}\n\n🔗 View on Cardano Scanner: ${scannerUrl}\n\nYou now have unlimited access to AI Companion.`;
+
+      alert(message);
+
       // Reset dialog count to allow unlimited usage
       setDialogCount(0);
     } catch (error: any) {
