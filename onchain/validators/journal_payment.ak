@@ -7,8 +7,8 @@ pub type Datum {
     journal_owner: ByteArray,    // Journal owner's pub key hash
     journal_nft_policy: ByteArray, // Policy ID of the journal NFT
     journal_nft_name: ByteArray,   // Asset name of the journal NFT
-    price: Int,                   // Price in lovelace
-    platform_fee: Int,            // Platform fee percentage (e.g., 50 = 50%)
+    price: Int,                   // Price in lovelace (total)
+    collected_amount: Int,        // Amount collected so far
   }
   PaidAccess {
     buyer: ByteArray,             // Buyer's pub key hash
@@ -19,9 +19,8 @@ pub type Datum {
 
 // Journal Payment Redeemer
 pub type Redeemer {
-  PayForAccess { buyer: ByteArray }  // Pay for journal access
-  ClaimOwnerShare                    // Journal owner claims their share
-  ClaimPlatformShare                 // Platform claims their share
+  PayForAccess { buyer: ByteArray }  // Pay for journal access (5 ADA)
+  ClaimShares                      // Claim accumulated shares (50/50 split)
 }
 
 fn contains_signer(signer: ByteArray, sigs: List<ByteArray>) -> Bool {
@@ -46,26 +45,27 @@ pub fn validate(datum: Datum, redeemer: Redeemer, ctx: ScriptContext) -> Bool {
       // Must be signed by buyer
       let buyer_signed = signed_by(buyer, ctx)
 
-      // Input must contain journal payment datum
-      // Output must contain paid access datum for this buyer
-      // ADA must be locked in the contract
+      // When paying for access:
+      // - Input datum should be JournalPayment
+      // - Output should have PaidAccess datum for buyer
+      // - ADA amount should be exactly 5 ADA (5,000,000 lovelace)
+      // - Contract should retain the payment
 
       buyer_signed
     }
 
-    ClaimOwnerShare -> {
+    ClaimShares -> {
       when datum is {
-        JournalPayment { journal_owner } -> {
-          // Must be signed by journal owner
-          signed_by(journal_owner, ctx)
+        JournalPayment { journal_owner, collected_amount } -> {
+          // Must be signed by either journal owner or platform
+          let owner_signed = signed_by(journal_owner, ctx)
+          let platform_signed = signed_by(PLATFORM_PKH, ctx)
+
+          // Allow claiming if signed by owner or platform
+          owner_signed || platform_signed
         }
         _ -> False
       }
-    }
-
-    ClaimPlatformShare -> {
-      // Must be signed by platform
-      signed_by(PLATFORM_PKH, ctx)
     }
   }
 }
