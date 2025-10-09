@@ -3,6 +3,7 @@ import { DiaryEntry } from "./DiaryForm";
 
 interface MoodTrendsProps {
   entries: Array<{ entry: DiaryEntry; cid: string }>;
+  publicEntries?: Array<{ entry: DiaryEntry; cid: string }>;
 }
 
 const moodEmojis = {
@@ -33,10 +34,11 @@ const moodColors = {
   grateful: "#98FB98",
 };
 
-export default function MoodTrends({ entries }: MoodTrendsProps) {
+export default function MoodTrends({ entries, publicEntries = [] }: MoodTrendsProps) {
   const [timeRange, setTimeRange] = useState("week");
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [viewMode, setViewMode] = useState<"personal" | "global">("personal");
 
   // Calculate streak
   const calculateStreak = () => {
@@ -75,8 +77,9 @@ export default function MoodTrends({ entries }: MoodTrendsProps) {
 
   // Calculate mood distribution
   const getMoodDistribution = () => {
+    const currentEntries = viewMode === "personal" ? entries : [...entries, ...publicEntries];
     const moodCounts: { [key: string]: number } = {};
-    entries.forEach(({ entry }) => {
+    currentEntries.forEach(({ entry }) => {
       const mood = entry.mood || "unknown";
       moodCounts[mood] = (moodCounts[mood] || 0) + 1;
     });
@@ -88,7 +91,8 @@ export default function MoodTrends({ entries }: MoodTrendsProps) {
     const now = new Date();
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    const weeklyEntries = entries.filter(
+    const currentEntries = viewMode === "personal" ? entries : [...entries, ...publicEntries];
+    const weeklyEntries = currentEntries.filter(
       ({ entry }) => new Date(entry.createdAt) >= weekAgo
     );
 
@@ -109,17 +113,45 @@ export default function MoodTrends({ entries }: MoodTrendsProps) {
     return dailyMoods;
   };
 
-  const streak = calculateStreak();
+  const currentEntries = viewMode === "personal" ? entries : [...entries, ...publicEntries];
+  const streak = viewMode === "personal" ? calculateStreak() : 0; // Streak only makes sense for personal entries
   const moodDistribution = getMoodDistribution();
   const weeklyData = getWeeklyData();
-  const totalEntries = entries.length;
+  const totalEntries = currentEntries.length;
 
   return (
     <div className="flex-1 p-8 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-800">Mood Trends</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800">Mood Trends</h1>
+          <p className="text-gray-600 mt-1">
+            {viewMode === "personal" ? "Your personal mood patterns" : "Global community mood patterns"}
+          </p>
+        </div>
         <div className="flex space-x-2">
+          <div className="flex space-x-1 mr-4">
+            <button
+              onClick={() => setViewMode("personal")}
+              className={`px-4 py-2 rounded-lg transition-all duration-200 ${
+                viewMode === "personal"
+                  ? "bg-gradient-to-r from-lavender to-sky-blue text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              👤 Personal
+            </button>
+            <button
+              onClick={() => setViewMode("global")}
+              className={`px-4 py-2 rounded-lg transition-all duration-200 ${
+                viewMode === "global"
+                  ? "bg-gradient-to-r from-lavender to-sky-blue text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              🌍 Global
+            </button>
+          </div>
           <button
             onClick={() => setTimeRange("week")}
             className={`px-4 py-2 rounded-lg transition-all duration-200 ${
@@ -145,34 +177,48 @@ export default function MoodTrends({ entries }: MoodTrendsProps) {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-gradient-to-r from-mint-green to-soft-yellow rounded-2xl p-6 shadow-lg">
-          <div className="flex items-center space-x-3">
-            <div className="text-3xl">🔥</div>
-            <div>
-              <h3 className="text-2xl font-bold text-gray-800">{streak}</h3>
-              <p className="text-gray-600">Day Streak</p>
+        {viewMode === "personal" ? (
+          <div className="bg-gradient-to-r from-mint-green to-soft-yellow rounded-2xl p-6 shadow-lg">
+            <div className="flex items-center space-x-3">
+              <div className="text-3xl">🔥</div>
+              <div>
+                <h3 className="text-2xl font-bold text-gray-800">{streak}</h3>
+                <p className="text-gray-600">Day Streak</p>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="bg-gradient-to-r from-mint-green to-soft-yellow rounded-2xl p-6 shadow-lg">
+            <div className="flex items-center space-x-3">
+              <div className="text-3xl">👥</div>
+              <div>
+                <h3 className="text-2xl font-bold text-gray-800">{publicEntries.length}</h3>
+                <p className="text-gray-600">Public Journals</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="bg-gradient-to-r from-lavender to-sky-blue rounded-2xl p-6 shadow-lg">
           <div className="flex items-center space-x-3">
             <div className="text-3xl">📝</div>
             <div>
               <h3 className="text-2xl font-bold text-white">{totalEntries}</h3>
-              <p className="text-white/80">Total Entries</p>
+              <p className="text-white/80">
+                {viewMode === "personal" ? "Your Entries" : "Total Community Entries"}
+              </p>
             </div>
           </div>
         </div>
 
         <div className="bg-gradient-to-r from-soft-yellow to-mint-green rounded-2xl p-6 shadow-lg">
           <div className="flex items-center space-x-3">
-            <div className="text-3xl">📅</div>
+            <div className="text-3xl">📊</div>
             <div>
               <h3 className="text-2xl font-bold text-gray-800">
-                {Math.floor(totalEntries / 7)}
+                {Object.keys(moodDistribution).length}
               </h3>
-              <p className="text-gray-600">Weeks Active</p>
+              <p className="text-gray-600">Unique Moods</p>
             </div>
           </div>
         </div>
@@ -271,7 +317,7 @@ export default function MoodTrends({ entries }: MoodTrendsProps) {
                 currentDate.toDateString() === today.toDateString();
 
               // Get moods for this date
-              const dayMoods = entries
+              const dayMoods = currentEntries
                 .filter(({ entry }) => {
                   const entryDate = new Date(entry.createdAt);
                   return entryDate.toDateString() === dateStr;
@@ -323,18 +369,23 @@ export default function MoodTrends({ entries }: MoodTrendsProps) {
       {/* Mood Insights */}
       <div className="bg-gradient-to-r from-lavender/20 to-sky-blue/20 rounded-2xl p-6 border border-lavender/30">
         <h3 className="text-xl font-semibold text-gray-800 mb-4">
-          💡 Mood Insights
+          💡 {viewMode === "personal" ? "Personal" : "Community"} Mood Insights
         </h3>
         <div className="space-y-3 text-gray-700">
-          {streak > 0 && (
+          {viewMode === "personal" && streak > 0 && (
             <p>
               🎉 You've been journaling for {streak} day{streak > 1 ? "s" : ""}{" "}
               in a row! Keep up the great work!
             </p>
           )}
+          {viewMode === "global" && publicEntries.length > 0 && (
+            <p>
+              🌍 The community has shared {publicEntries.length} public journal{publicEntries.length > 1 ? "s" : ""}!
+            </p>
+          )}
           {totalEntries > 0 && (
             <p>
-              Your most common mood is{" "}
+              The most common mood {viewMode === "personal" ? "in your journal" : "in the community"} is{" "}
               <strong>
                 {
                   Object.entries(moodDistribution).reduce((a, b) =>
@@ -346,7 +397,11 @@ export default function MoodTrends({ entries }: MoodTrendsProps) {
             </p>
           )}
           {totalEntries === 0 && (
-            <p>Start journaling to see your mood trends and insights here!</p>
+            <p>
+              {viewMode === "personal"
+                ? "Start journaling to see your mood trends and insights here!"
+                : "No public journals available yet. Be the first to share!"}
+            </p>
           )}
         </div>
       </div>
