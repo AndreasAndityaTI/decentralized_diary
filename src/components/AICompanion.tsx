@@ -46,6 +46,27 @@ export default function AICompanion(props: {
   const remaining = Math.max(0, dialogLimit - dialogCount);
   const reachedLimit = remaining <= 0;
 
+  const [subscribing, setSubscribing] = useState(false);
+
+  const onSubscribe = async () => {
+    if (!props.walletApi || !props.walletAddress) {
+      alert("Please connect your wallet first");
+      return;
+    }
+
+    try {
+      setSubscribing(true);
+      await payForAISubscription(props.walletApi, props.walletAddress);
+      alert("Subscription successful! You now have unlimited access to AI Companion.");
+      // Reset dialog count to allow unlimited usage
+      setDialogCount(0);
+    } catch (error: any) {
+      alert(`Subscription failed: ${error.message}`);
+    } finally {
+      setSubscribing(false);
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
     if (reachedLimit) return;
@@ -85,26 +106,6 @@ export default function AICompanion(props: {
     }
   };
 
-  const [subscribing, setSubscribing] = useState(false);
-
-  const onSubscribe = async () => {
-    if (!props.walletApi || !props.walletAddress) {
-      alert("Please connect your wallet first");
-      return;
-    }
-
-    try {
-      setSubscribing(true);
-      await payForAISubscription(props.walletApi, props.walletAddress);
-      alert("Subscription successful! You now have unlimited access to AI Companion.");
-      // Reset dialog count to allow unlimited usage
-      setDialogCount(0);
-    } catch (error: any) {
-      alert(`Subscription failed: ${error.message}`);
-    } finally {
-      setSubscribing(false);
-    }
-  };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {

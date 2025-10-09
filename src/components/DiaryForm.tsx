@@ -1,7 +1,6 @@
 import React from "react";
 import { classifySentiment } from "../services/sentiment";
 import { uploadJsonToIpfs, extractDiaryMetadata } from "../services/ipfs";
-import { mintMonetizedJournalNFT } from "../services/cardano";
 
 export type DiaryEntry = {
   title: string;
@@ -14,10 +13,6 @@ export type DiaryEntry = {
   hideWalletAddress?: boolean;
   hideWalletUsername?: boolean;
   overrideMood?: string;
-  isMonetized?: boolean;
-  nftPolicyId?: string;
-  nftAssetName?: string;
-  nftTxHash?: string;
   secretHistory?: string;
 };
 
@@ -55,7 +50,6 @@ export default function DiaryForm(props: {
   const [location, setLocation] = React.useState(props.entryToEdit?.entry.location || "");
   const [hideWalletAddress, setHideWalletAddress] = React.useState(props.entryToEdit?.entry.hideWalletAddress || false);
   const [hideWalletUsername, setHideWalletUsername] = React.useState(props.entryToEdit?.entry.hideWalletUsername || false);
-  const [isMonetized, setIsMonetized] = React.useState(props.entryToEdit?.entry.isMonetized || false);
   const [countries, setCountries] = React.useState<Array<{ name: string; code: string }>>([]);
   const [loadingCountries, setLoadingCountries] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
@@ -377,21 +371,6 @@ export default function DiaryForm(props: {
       // Generate secret history from existing entries
       const secretHistory = generateSecretHistory();
 
-      let nftInfo = undefined;
-      if (isMonetized && props.walletApi && props.walletAddress) {
-        console.log("🎨 Minting NFT for monetized journal...");
-        try {
-          nftInfo = await mintMonetizedJournalNFT(
-            props.walletApi,
-            props.walletAddress,
-            "", // We'll set IPFS CID after upload
-            title
-          );
-          console.log("✅ NFT minted:", nftInfo);
-        } catch (nftError) {
-          console.warn("⚠️ NFT minting failed, proceeding without NFT:", nftError);
-        }
-      }
 
       const entry: DiaryEntry = {
         title,
@@ -404,10 +383,6 @@ export default function DiaryForm(props: {
         hideWalletAddress,
         hideWalletUsername,
         overrideMood: overrideMood || undefined,
-        isMonetized,
-        nftPolicyId: nftInfo?.policyId,
-        nftAssetName: nftInfo?.assetName,
-        nftTxHash: nftInfo?.txHash,
         secretHistory,
       };
 
@@ -547,27 +522,6 @@ export default function DiaryForm(props: {
           </div>
         )}
 
-        {/* Monetize Journal Option */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">
-            💰 Monetize Your Journal
-          </label>
-          <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
-            <input
-              type="checkbox"
-              id="isMonetized"
-              checked={isMonetized}
-              onChange={(e) => setIsMonetized(e.target.checked)}
-              className="w-4 h-4 text-lavender bg-gray-100 border-gray-300 rounded focus:ring-lavender focus:ring-2"
-            />
-            <label htmlFor="isMonetized" className="text-sm text-gray-700">
-              Make this journal available for purchase
-            </label>
-          </div>
-          <p className="text-xs text-gray-500">
-            50% for writer, 50% for company
-          </p>
-        </div>
 
         {/* Override AI Mood Analysis */}
         <div className="space-y-2">

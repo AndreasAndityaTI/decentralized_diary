@@ -533,3 +533,4 @@ export async function payForAISubscription(
     throw new Error(`Failed to pay for AI subscription: ${error?.message || 'Unknown error'}`);
   }
 }
+
