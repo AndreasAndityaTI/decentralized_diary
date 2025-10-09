@@ -161,10 +161,10 @@ export default function JournalLogs({
             {entries.map(({ entry, cid }, idx) => (
               <div
                 key={idx}
-                className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-200 cursor-pointer"
+                className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 md:p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all duration-200 cursor-pointer"
                 onClick={() => setSelectedEntry({ entry, cid })}
               >
-                <div className="flex items-start space-x-4">
+                <div className="flex flex-col md:flex-row md:items-start space-y-3 md:space-y-0 md:space-x-4">
                   {/* Timeline dot */}
                   <div
                     className={`w-4 h-4 rounded-full bg-gradient-to-r ${
@@ -175,13 +175,22 @@ export default function JournalLogs({
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-2 md:space-y-0 mb-2">
                       <h3 className="text-lg font-semibold text-gray-800">
                         {entry.title}
                       </h3>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center justify-between md:justify-end space-x-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-2xl">
+                            {moodEmojis[entry.mood as keyof typeof moodEmojis] ||
+                              "😊"}
+                          </span>
+                          <span className="text-sm text-gray-500">
+                            {new Date(entry.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
                         {isAuthor(entry) && (
-                          <div className="flex space-x-1 mr-2">
+                          <div className="flex space-x-1">
                             {onEdit && (
                               <button
                                 onClick={(e) => {
@@ -207,13 +216,6 @@ export default function JournalLogs({
                             )}
                           </div>
                         )}
-                        <span className="text-2xl">
-                          {moodEmojis[entry.mood as keyof typeof moodEmojis] ||
-                            "😊"}
-                        </span>
-                        <span className="text-sm text-gray-500">
-                          {new Date(entry.createdAt).toLocaleDateString()}
-                        </span>
                       </div>
                     </div>
 
@@ -289,9 +291,9 @@ export default function JournalLogs({
 
       {/* Entry Detail Modal */}
       {selectedEntry && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-            <div className="p-6">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-2 md:p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] md:max-h-[80vh] overflow-y-auto">
+            <div className="p-4 md:p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold text-gray-800">
                   {selectedEntry.entry.title}

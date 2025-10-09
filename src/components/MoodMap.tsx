@@ -141,10 +141,10 @@ export default function MoodMap({ entries }: MoodMapProps) {
   };
 
   return (
-    <div className="flex-1 p-4 md:p-8 space-y-6">
+    <div className="flex-1 p-4 md:p-8 space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-800">🌍 Global Mood Map</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-800">🌍 Global Mood Map</h1>
       </div>
 
       {/* Your Contribution Section */}
@@ -158,17 +158,17 @@ export default function MoodMap({ entries }: MoodMapProps) {
           You've contributed <strong>{globalStats.userEntries}</strong> mood entries to the global dataset!
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <div className="bg-white/60 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-lavender mb-1">{globalStats.userEntries}</div>
+            <div className="text-xl md:text-2xl font-bold text-lavender mb-1">{globalStats.userEntries}</div>
             <div className="text-sm text-gray-600">Your Entries</div>
           </div>
           <div className="bg-white/60 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-lavender mb-1">{globalStats.mostCommonMood}</div>
+            <div className="text-xl md:text-2xl font-bold text-lavender mb-1">{globalStats.mostCommonMood}</div>
             <div className="text-sm text-gray-600">Your Main Mood</div>
           </div>
           <div className="bg-white/60 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-lavender mb-1">{globalStats.positivityRate}%</div>
+            <div className="text-xl md:text-2xl font-bold text-lavender mb-1">{globalStats.positivityRate}%</div>
             <div className="text-sm text-gray-600">Your Positivity</div>
           </div>
         </div>
@@ -177,17 +177,17 @@ export default function MoodMap({ entries }: MoodMapProps) {
           Your data helps create a better understanding of global emotional patterns while keeping your personal stories private.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-white/60 rounded-lg p-4 text-center">
-            <div className="text-3xl font-bold text-lavender mb-1">{globalStats.activeUsers.toLocaleString()}</div>
+            <div className="text-xl md:text-3xl font-bold text-lavender mb-1">{globalStats.activeUsers.toLocaleString()}</div>
             <div className="text-sm text-gray-600">Active Users Today</div>
           </div>
           <div className="bg-white/60 rounded-lg p-4 text-center">
-            <div className="text-3xl font-bold text-lavender mb-1">{globalStats.totalEntries.toLocaleString()}</div>
+            <div className="text-xl md:text-3xl font-bold text-lavender mb-1">{globalStats.totalEntries.toLocaleString()}</div>
             <div className="text-sm text-gray-600">Mood Entries Today</div>
           </div>
           <div className="bg-white/60 rounded-lg p-4 text-center">
-            <div className="text-3xl font-bold text-green-600 mb-1">{globalStats.positivityRate}%</div>
+            <div className="text-xl md:text-3xl font-bold text-green-600 mb-1">{globalStats.positivityRate}%</div>
             <div className="text-sm text-gray-600">Positive Moods </div>
           </div>
         </div>

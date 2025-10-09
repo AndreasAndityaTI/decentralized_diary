@@ -261,9 +261,9 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-lavender/10 via-sky-blue/10 to-mint-green/10">
-      <div className="flex">
+      <div className="flex flex-col md:flex-row">
         <Sidebar currentPage={currentPage} onPageChange={setCurrentPage} />
-        <main className="flex-1">{renderPage()}</main>
+        <main className="flex-1 min-h-screen md:min-h-0 pt-16 md:pt-0 pb-20 md:pb-0">{renderPage()}</main>
       </div>
 
       {/* OnChain Note - removed as requested */}

@@ -441,17 +441,17 @@ export default function DiaryForm(props: {
   };
 
   return (
-    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 md:p-6 shadow-lg border border-gray-200 space-y-4 md:space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
         <div>
-          <h3 className="text-2xl font-bold text-gray-800">
-            Good Morning!
+          <h3 className="text-xl md:text-2xl font-bold text-gray-800">
+            {isEditing ? "Edit Your Story" : "Good Morning!"}
           </h3>
           <p className="text-gray-600 mt-1">
-            How are you feeling today?
+            {isEditing ? "Update your journal entry" : "How are you feeling today?"}
           </p>
           <p className="text-sm text-gray-500 mt-1">
-            Ready to write today's story?
+            {isEditing ? "Make changes to your story" : "Ready to write today's story?"}
           </p>
           {props.walletAddress && (
             <div className="mt-2 text-xs text-gray-500">
@@ -598,11 +598,11 @@ export default function DiaryForm(props: {
       </div>
 
       {/* Mood Analysis */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
         <button
           onClick={analyze}
           disabled={analyzing || !content.trim()}
-          className="px-6 py-3 rounded-xl bg-gradient-to-r from-mint-green to-soft-yellow text-gray-800 hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          className="px-4 md:px-6 py-3 rounded-xl bg-gradient-to-r from-mint-green to-soft-yellow text-gray-800 hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm md:text-base"
         >
           {analyzing
             ? "Understanding your feelings..."
@@ -610,7 +610,7 @@ export default function DiaryForm(props: {
         </button>
 
         {mood && (
-          <div className="flex items-center space-x-3 bg-gradient-to-r from-lavender/20 to-sky-blue/20 rounded-xl p-3">
+          <div className="flex items-center space-x-3 bg-gradient-to-r from-lavender/20 to-sky-blue/20 rounded-xl p-3 self-center md:self-auto">
             <span className="text-2xl">
               {moodEmojis[mood as keyof typeof moodEmojis] || "😊"}
             </span>
@@ -623,11 +623,11 @@ export default function DiaryForm(props: {
         )}
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-center md:justify-end">
         <button
           onClick={handleSubmit}
           disabled={loading || analyzing || !title.trim() || !content.trim()}
-          className="px-8 py-3 rounded-xl bg-gradient-to-r from-lavender to-sky-blue text-white hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-lg"
+          className="w-full md:w-auto px-6 md:px-8 py-3 rounded-xl bg-gradient-to-r from-lavender to-sky-blue text-white hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-base md:text-lg"
         >
           {loading ? (isEditing ? "Updating your story..." : "Saving your story...") : (isEditing ? "📝 Update My Story" : "📖 Save My Story")}
         </button>
