@@ -3,38 +3,45 @@ import Landing from "./components/Landing";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./components/Dashboard";
 import JournalLogs from "./components/JournalLogs";
+import PublicJournals from "./components/PublicJournals";
 import MoodTrends from "./components/MoodTrends";
 import MoodMap from "./components/MoodMap";
 import AICompanion from "./components/AICompanion";
 import Community from "./components/Community";
 import Profile from "./components/Profile";
 import DiaryForm, { DiaryEntry } from "./components/DiaryForm";
-import {
-  fetchAllEntries,
-  fetchAllEntriesLive,
-  addCid,
-  clearAllCids,
-  getStoredCids,
-} from "./services/entries";
-import { fetchEntriesFromIpfs } from "./services/ipfs";
-// import OnChainNote from "./components/OnChainNote";
+
+// Dynamic imports to avoid startup crashes - load services only when needed
+const entriesService = import("./services/entries");
+const ipfsService = import("./services/ipfs");
 
 export default function App() {
   const [connected, setConnected] = React.useState(false);
   const [walletAddress, setWalletAddress] = React.useState<string>("");
+  const [walletUsername, setWalletUsername] = React.useState<string>("");
+  const [walletApi, setWalletApi] = React.useState<any>(null);
   const [currentPage, setCurrentPage] = React.useState("dashboard");
   const [lastCid, setLastCid] = React.useState<string>("");
   const [entries, setEntries] = React.useState<
     Array<{ entry: DiaryEntry; cid: string }>
   >([]);
+  const [publicEntries, setPublicEntries] = React.useState<
+    Array<{ entry: DiaryEntry; cid: string }>
+  >([]);
   const [loadingEntries, setLoadingEntries] = React.useState(false);
+  const [editingEntry, setEditingEntry] = React.useState<{ entry: DiaryEntry; cid: string } | null>(null);
 
-  // Load entries live from IPFS on app start
+  // Load entries live from IPFS on app start - only after wallet is connected
   React.useEffect(() => {
+    if (!connected || !walletAddress) return;
+
     const loadEntries = async () => {
       console.log("🚀 App starting - loading ALL entries from IPFS...");
       setLoadingEntries(true);
       try {
+        const { fetchAllEntriesLive } = await entriesService;
+        const { fetchEntriesFromIpfs } = await ipfsService;
+
         // First try live discovery from Pinata API (automatic discovery)
         console.log("🌐 Trying live discovery from Pinata API...");
         const liveEntries = await fetchAllEntriesLive(walletAddress);
@@ -51,6 +58,7 @@ export default function App() {
           );
 
           // Fallback to localStorage CIDs
+          const { getStoredCids } = await entriesService;
           const cids = getStoredCids();
           console.log(`📋 Found ${cids.length} CIDs in localStorage:`, cids);
 
@@ -75,6 +83,7 @@ export default function App() {
 
         // Fallback: try the old method
         try {
+          const { fetchAllEntries } = await entriesService;
           const fallbackEntries = await fetchAllEntries();
           console.log("📝 Fallback entries:", fallbackEntries);
           setEntries(fallbackEntries);
@@ -87,17 +96,38 @@ export default function App() {
     };
 
     loadEntries();
-  }, [walletAddress]);
+    loadPublicEntries();
+  }, [walletAddress, connected]);
+
+  // Load public entries from IPFS
+  const loadPublicEntries = async () => {
+    if (!connected) return;
+
+    try {
+      const { fetchAllDiaryEntriesFromPinata } = await ipfsService;
+      const allEntries = await fetchAllDiaryEntriesFromPinata();
+
+      // Filter for public entries only
+      const publicOnly = allEntries.filter(({ entry }) => entry.isPublic === true);
+      setPublicEntries(publicOnly);
+      console.log(`✅ Loaded ${publicOnly.length} public entries from IPFS`);
+    } catch (error) {
+      console.error("❌ Failed to load public entries:", error);
+      // Don't show error to user, just log it
+    }
+  };
 
   const handlePublish = async (entry: DiaryEntry, cid: string) => {
     setLastCid(cid);
     // Add CID to storage
+    const { addCid } = await entriesService;
     addCid(cid);
 
     // Refresh all entries from IPFS to get both old and new entries
     console.log("🔄 Refreshing all entries after new publish...");
     setLoadingEntries(true);
     try {
+      const { fetchAllEntriesLive } = await entriesService;
       const allEntries = await fetchAllEntriesLive(walletAddress);
       setEntries(allEntries);
       console.log(`✅ Refreshed ${allEntries.length} total entries from IPFS`);
@@ -114,6 +144,7 @@ export default function App() {
   const refreshEntries = async () => {
     setLoadingEntries(true);
     try {
+      const { fetchAllEntriesLive } = await entriesService;
       const fetchedEntries = await fetchAllEntriesLive(walletAddress);
       setEntries(fetchedEntries);
     } catch (error) {
@@ -124,9 +155,100 @@ export default function App() {
   };
 
   // Function to clear all entries (useful for testing)
-  const clearAllEntries = () => {
+  const clearAllEntries = async () => {
     setEntries([]);
+    const { clearAllCids } = await entriesService;
     clearAllCids();
+  };
+
+  // Function to edit an entry
+  const handleEditEntry = (entry: DiaryEntry, cid: string) => {
+    setEditingEntry({ entry, cid });
+    setCurrentPage("dashboard"); // Switch to dashboard to show the form
+  };
+
+  // Function to update an entry
+  const handleUpdateEntry = async (updatedEntry: DiaryEntry, oldCid: string, newCid: string) => {
+    try {
+      // Remove old CID and add new one
+      const { removeCid, addCid } = await entriesService;
+      removeCid(oldCid);
+      addCid(newCid);
+
+      // Update state
+      setEntries(prev => prev.map(item =>
+        item.cid === oldCid ? { entry: updatedEntry, cid: newCid } : item
+      ));
+
+      // Clear editing state
+      setEditingEntry(null);
+
+      console.log("Entry updated successfully");
+    } catch (error) {
+      console.error("Failed to update entry:", error);
+      throw error;
+    }
+  };
+
+  // Function to cancel editing
+  const handleCancelEdit = () => {
+    setEditingEntry(null);
+  };
+
+  // Function to delete an entry
+  const handleDeleteEntry = async (cid: string) => {
+    try {
+      // Remove from local storage
+      const { removeCid } = await entriesService;
+      removeCid(cid);
+
+      // Remove from state
+      setEntries(prev => prev.filter(item => item.cid !== cid));
+
+      console.log("Entry deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete entry:", error);
+      throw error;
+    }
+  };
+
+  // Function to toggle publicity of an entry
+  const handleTogglePublic = async (cid: string, isPublic: boolean) => {
+    try {
+      // Find the entry in state
+      const entryItem = entries.find(item => item.cid === cid);
+      if (!entryItem) return;
+
+      // Update the entry with new publicity status
+      const updatedEntry: DiaryEntry = {
+        ...entryItem.entry,
+        isPublic,
+      };
+
+      // Re-upload to IPFS with updated metadata
+      const { extractDiaryMetadata, uploadJsonToIpfs } = await ipfsService;
+      const metadata = extractDiaryMetadata(updatedEntry, walletAddress);
+      const ipfsResult = await uploadJsonToIpfs(updatedEntry, metadata);
+
+      // Update local storage with new CID
+      const { removeCid, addCid } = await entriesService;
+      removeCid(cid);
+      addCid(ipfsResult.cid);
+
+      // Update state
+      setEntries(prev =>
+        prev.map(item =>
+          item.cid === cid
+            ? { entry: updatedEntry, cid: ipfsResult.cid }
+            : item
+        )
+      );
+
+      console.log(`Entry publicity ${isPublic ? 'enabled' : 'disabled'} successfully`);
+    } catch (error) {
+      console.error("Failed to toggle entry publicity:", error);
+      alert("Failed to update entry publicity. Please try again.");
+    }
   };
 
   const renderPage = () => {
@@ -135,10 +257,15 @@ export default function App() {
         return (
           <Dashboard
             onPublish={handlePublish}
+            onUpdated={handleUpdateEntry}
+            onCancelEdit={handleCancelEdit}
             entries={entries}
             loading={loadingEntries}
             onRefresh={refreshEntries}
             walletAddress={walletAddress}
+            walletUsername={walletUsername}
+            walletApi={walletApi}
+            entryToEdit={editingEntry}
           />
         );
       case "journal":
@@ -147,40 +274,39 @@ export default function App() {
             entries={entries}
             loading={loadingEntries}
             onRefresh={refreshEntries}
+            walletApi={walletApi}
+            walletAddress={walletAddress}
+            onEdit={handleEditEntry}
+            onDelete={handleDeleteEntry}
+            onTogglePublic={handleTogglePublic}
           />
         );
+      case "public-journals":
+        return <PublicJournals walletAddress={walletAddress} />;
       case "trends":
-        return <MoodTrends entries={entries} />;
+        return <MoodTrends entries={entries} publicEntries={publicEntries} />;
       case "moodmap":
         return <MoodMap entries={entries} />;
       case "ai-companion":
-        return <AICompanion />;
+        return <AICompanion walletApi={walletApi} walletAddress={walletAddress} />;
       case "dao":
         return <Community />;
       case "profile":
-        return <Profile />;
-      case "settings":
-        return (
-          <div className="flex-1 p-8">
-            <h1 className="text-3xl font-bold text-gray-800 mb-6">Settings</h1>
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                Account Settings
-              </h2>
-              <p className="text-gray-600">Settings coming soon...</p>
-            </div>
-          </div>
-        );
+        return <Profile entries={entries} walletAddress={walletAddress} walletApi={walletApi} />;
       default:
         return <Dashboard onPublish={handlePublish} entries={entries} />;
     }
   };
 
-  const handleWalletConnected = (address: string) => {
+  const handleWalletConnected = (api: any, address: string, walletName?: string) => {
     console.log("Wallet connected, redirecting to dashboard...");
+    console.log("Wallet API:", api);
     console.log("Wallet address:", address);
-    console.log("Setting wallet address state...");
+    console.log("Wallet name:", walletName);
+    console.log("Setting wallet state...");
+    setWalletApi(api);
     setWalletAddress(address);
+    setWalletUsername(walletName || "");
     setConnected(true);
   };
 
@@ -195,14 +321,14 @@ export default function App() {
   }, [walletAddress]);
 
   if (!connected) {
-    return <Landing onConnected={handleWalletConnected} />;
+    return <Landing onConnected={(api, address, walletName) => handleWalletConnected(api, address, walletName)} />;
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-lavender/10 via-sky-blue/10 to-mint-green/10">
-      <div className="flex">
+      <div className="flex flex-col md:flex-row">
         <Sidebar currentPage={currentPage} onPageChange={setCurrentPage} />
-        <main className="flex-1">{renderPage()}</main>
+        <main className="flex-1 min-h-screen md:min-h-0 pt-16 md:pt-0 pb-20 md:pb-0">{renderPage()}</main>
       </div>
 
       {/* OnChain Note - removed as requested */}

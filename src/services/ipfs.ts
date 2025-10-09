@@ -18,6 +18,7 @@ export type DiaryEntryMetadata = {
   date: string;
   wordCount: number;
   walletAddress: string; // Add wallet address to metadata
+  isPublic?: boolean;
 };
 
 // Option 1: Environment variables (recommended)
@@ -52,6 +53,7 @@ export async function uploadJsonToIpfs(
         wc: metadata?.wordCount?.toString() || "0",
         type: "diary",
         wallet: metadata?.walletAddress || "unknown",
+        public: metadata?.isPublic?.toString() || "false",
       },
     })
   );
@@ -120,6 +122,7 @@ export async function uploadJsonToIpfs(
         wc: metadata?.wordCount?.toString() || "0",
         type: "diary",
         wallet: metadata?.walletAddress || "unknown",
+        public: metadata?.isPublic?.toString() || "false",
       },
     },
   };
@@ -149,6 +152,7 @@ export function extractDiaryMetadata(
     date,
     wordCount,
     walletAddress: walletAddress || "unknown",
+    isPublic: entry.isPublic || false,
   };
 }
 
@@ -319,7 +323,9 @@ export async function fetchAllDiaryEntriesFromPinata(
         file.metadata?.keyvalues?.date ||
         file.metadata?.keyvalues?.wc;
 
-      // Filter by wallet address if provided
+      // Filter by wallet address if provided (for private entries)
+      // For public entries, we want all entries marked as public
+      const isPublicEntry = file.metadata?.keyvalues?.public === "true";
       const matchesWallet =
         walletAddress && walletAddress !== ""
           ? file.metadata?.keyvalues?.wallet === walletAddress
@@ -329,6 +335,7 @@ export async function fetchAllDiaryEntriesFromPinata(
         hasDiaryType,
         hasDiaryName,
         hasDiaryKeyvalues,
+        isPublicEntry,
         matchesWallet,
         fileWallet: file.metadata?.keyvalues?.wallet,
         requestedWallet: walletAddress,
@@ -336,7 +343,8 @@ export async function fetchAllDiaryEntriesFromPinata(
       });
 
       return (
-        (hasDiaryType || hasDiaryName || hasDiaryKeyvalues) && matchesWallet
+        (hasDiaryType || hasDiaryName || hasDiaryKeyvalues) &&
+        (isPublicEntry || matchesWallet)
       );
     });
 

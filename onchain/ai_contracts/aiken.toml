@@ -1,0 +1,14 @@
+name = "andreasanditya/decentralized_diary"
+version = "0.1.0"
+license = "MIT"
+
+[repository]
+platform = "github"
+user = "andreasanditya"
+project = "decentralized_diary"
+
+[[dependencies]]
+name = "aiken-lang/stdlib"
+version = "1.9.0"
+source = "github"
+git = "https://github.com/aiken-lang/stdlib"

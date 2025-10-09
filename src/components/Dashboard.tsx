@@ -4,10 +4,15 @@ import DiaryForm from "./DiaryForm";
 
 interface DashboardProps {
   onPublish: (entry: DiaryEntry, cid: string) => void;
+  onUpdated?: (entry: DiaryEntry, oldCid: string, newCid: string) => void;
+  onCancelEdit?: () => void;
   entries: Array<{ entry: DiaryEntry; cid: string }>;
   loading?: boolean;
   onRefresh?: () => void;
   walletAddress?: string;
+  walletUsername?: string;
+  walletApi?: any;
+  entryToEdit?: { entry: DiaryEntry; cid: string } | null;
 }
 
 const moodEmojis = {
@@ -29,10 +34,15 @@ const moodEmojis = {
 
 export default function Dashboard({
   onPublish,
+  onUpdated,
+  onCancelEdit,
   entries,
   loading = false,
   onRefresh,
   walletAddress,
+  walletUsername,
+  walletApi,
+  entryToEdit,
 }: DashboardProps) {
   console.log("🔍 Dashboard received walletAddress:", walletAddress);
   const todayEntry = entries.find(({ entry }) => {
@@ -46,16 +56,24 @@ export default function Dashboard({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">
-            Good{" "}
-            {new Date().getHours() < 12
-              ? "Morning"
-              : new Date().getHours() < 18
-              ? "Afternoon"
-              : "Evening"}
-            !
+            {entryToEdit ? "Edit Your Story" : `Good ${new Date().getHours() < 12 ? "Morning" : new Date().getHours() < 18 ? "Afternoon" : "Evening"}!`}
           </h1>
-          <p className="text-gray-600 mt-1">How are you feeling today?</p>
+          <p className="text-gray-600 mt-1">
+            {entryToEdit ? "Update your journal entry" : "How are you feeling today?"}
+          </p>
         </div>
+        {entryToEdit && onCancelEdit && (
+          <button
+            onClick={() => {
+              if (window.confirm("Cancel editing?")) {
+                onCancelEdit();
+              }
+            }}
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+          >
+            Cancel Edit
+          </button>
+        )}
       </div>
 
       {/* Today's Entry Status */}
@@ -91,7 +109,7 @@ export default function Dashboard({
       )}
 
       {/* Writing Form */}
-      <DiaryForm onPublished={onPublish} walletAddress={walletAddress} />
+      <DiaryForm onPublished={onPublish} onUpdated={onUpdated} walletAddress={walletAddress} walletUsername={walletUsername} walletApi={walletApi} existingEntries={entries} entryToEdit={entryToEdit || undefined} />
     </div>
   );
 }

@@ -1,20 +1,136 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { generateAIReply } from "../services/ai";
+import { enableWallet, getWalletInfo, type WalletAPI, payForAISubscription } from "../services/cardano";
+import { getCookie, setCookieWithExpiry } from "../services/cookies";
 
-export default function AICompanion() {
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      text: "Hello! I'm your AI writing companion. I'm here to help you reflect on your day, organize your thoughts, and provide emotional support. What's on your mind?",
-      isAI: true,
-      timestamp: new Date(),
-    },
-  ]);
+export default function AICompanion(props: {
+  walletApi?: any;
+  walletAddress?: string;
+}) {
+  // Load messages from cookies or use default welcome message
+  const loadMessagesFromCookies = () => {
+    try {
+      const cookieData = getCookie('ai_chat_messages');
+      if (cookieData) {
+        const parsedMessages = JSON.parse(cookieData);
+        // Convert timestamp strings back to Date objects
+        return parsedMessages.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }));
+      }
+    } catch (error) {
+      console.warn('Failed to load messages from cookies:', error);
+    }
+
+    // Default welcome message
+    return [
+      {
+        id: 1,
+        text: "Hello! I'm your AI writing companion. I'm here to help you reflect on your day, organize your thoughts, and provide emotional support. What's on your mind?",
+        isAI: true,
+        timestamp: new Date(),
+      },
+    ];
+  };
+
+  const [messages, setMessages] = useState(loadMessagesFromCookies);
   const [inputMessage, setInputMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const walletAddr = props.walletAddress || "unknown";
+  const dialogLimit = 3;
+
+  const storageKey = useMemo(() => `ai_dialogs:${walletAddr}`, [walletAddr]);
+  const [dialogCount, setDialogCount] = useState<number>(() => {
+    try {
+      const raw = localStorage.getItem(`ai_dialogs:${walletAddr}`);
+      return raw ? parseInt(raw, 10) || 0 : 0;
+    } catch {
+      return 0;
+    }
+  });
+
+  useEffect(() => {
+    // Load per-wallet count when wallet changes
+    const raw = localStorage.getItem(`ai_dialogs:${walletAddr}`);
+    if (raw) setDialogCount(parseInt(raw, 10) || 0);
+  }, [walletAddr]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(storageKey, String(dialogCount));
+    } catch {
+      // ignore
+    }
+  }, [storageKey, dialogCount]);
+
+  // Save messages to cookies whenever they change
+  useEffect(() => {
+    try {
+      // Only save if there are more messages than just the welcome message
+      if (messages.length > 1) {
+        setCookieWithExpiry('ai_chat_messages', JSON.stringify(messages), 30); // 30 days expiry
+      }
+    } catch (error) {
+      console.warn('Failed to save messages to cookies:', error);
+    }
+  }, [messages]);
+
+  const remaining = Math.max(0, dialogLimit - dialogCount);
+  const reachedLimit = remaining <= 0;
+
+  const [subscribing, setSubscribing] = useState(false);
+
+  const onSubscribe = async () => {
+    if (!props.walletApi || !props.walletAddress) {
+      alert("Please connect your wallet first");
+      return;
+    }
+
+    try {
+      setSubscribing(true);
+      const txHash = await payForAISubscription(props.walletApi, props.walletAddress);
+
+      // Show success message with transaction details
+      const scannerUrl = `https://preprod.cardanoscan.io/transaction/${txHash}`;
+      const message = `🎉 Subscription successful!\n\nTransaction Hash: ${txHash}\n\n🔗 View on Cardano Scanner: ${scannerUrl}\n\nYou now have unlimited access to AI Companion.`;
+
+      alert(message);
+
+      // Reset dialog count to allow unlimited usage
+      setDialogCount(0);
+    } catch (error: any) {
+      alert(`Subscription failed: ${error.message}`);
+    } finally {
+      setSubscribing(false);
+    }
+  };
+
+  const clearChatHistory = () => {
+    if (confirm("Are you sure you want to clear all chat history? This action cannot be undone.")) {
+      // Reset to default welcome message
+      const defaultMessages = [
+        {
+          id: 1,
+          text: "Hello! I'm your AI writing companion. I'm here to help you reflect on your day, organize your thoughts, and provide emotional support. What's on your mind?",
+          isAI: true,
+          timestamp: new Date(),
+        },
+      ];
+      setMessages(defaultMessages);
+
+      // Clear the cookie
+      try {
+        document.cookie = 'ai_chat_messages=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      } catch (error) {
+        console.warn('Failed to clear chat cookie:', error);
+      }
+    }
+  };
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
+    if (reachedLimit) return;
 
     const userMessage = {
       id: messages.length + 1,
@@ -37,6 +153,7 @@ export default function AICompanion() {
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, aiMessage]);
+      setDialogCount((c) => c + 1);
     } catch (e) {
       const aiMessage = {
         id: messages.length + 2,
@@ -51,7 +168,6 @@ export default function AICompanion() {
   };
 
 
-
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -59,19 +175,31 @@ export default function AICompanion() {
     }
   };
 
+
   return (
     <div className="flex-1 p-8 space-y-6">
       {/* Header */}
-      <div className="flex items-center space-x-4">
-        <div className="w-12 h-12 bg-gradient-to-r from-lavender to-sky-blue rounded-full flex items-center justify-center">
-          <span className="text-white text-xl">🤖</span>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <div className="w-12 h-12 bg-gradient-to-r from-lavender to-sky-blue rounded-full flex items-center justify-center">
+            <span className="text-white text-xl">🤖</span>
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">AI Companion</h1>
+            <p className="text-gray-600">
+              Your personal writing and reflection assistant
+            </p>
+            <p className="text-sm text-gray-500">Wallet: {walletAddr === "unknown" ? "not connected" : `${walletAddr.slice(0, 10)}...`}</p>
+            <p className="text-sm text-gray-600">Dialogs remaining: {remaining} / {dialogLimit}</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800">AI Companion</h1>
-          <p className="text-gray-600">
-            Your personal writing and reflection assistant
-          </p>
-        </div>
+        <button
+          onClick={clearChatHistory}
+          className="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors text-sm"
+          title="Clear chat history"
+        >
+          🗑️ Clear Chat
+        </button>
       </div>
 
       {/* Chat Container */}
@@ -116,6 +244,21 @@ export default function AICompanion() {
               </div>
             </div>
           )}
+          {reachedLimit && (
+            <div className="flex justify-center">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 text-center max-w-lg">
+                <p className="text-gray-800 font-medium mb-2">Free trial reached (3 dialogs).</p>
+                <p className="text-gray-600 mb-3">Subscribe to continue using AI Companion.</p>
+                <button
+                  onClick={onSubscribe}
+                  disabled={subscribing}
+                  className="px-5 py-2 bg-gradient-to-r from-lavender to-sky-blue text-white rounded-lg hover:shadow-lg transition-all duration-200 disabled:opacity-50"
+                >
+                  {subscribing ? "Processing..." : "Subscribe with Cardano"}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Input */}
@@ -126,15 +269,20 @@ export default function AICompanion() {
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Ask me anything about your mood, writing, or day..."
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-lavender"
+              placeholder={
+                reachedLimit
+                  ? "Subscribe to continue..."
+                  : "Ask me anything about your mood, writing, or day..."
+              }
+              disabled={reachedLimit}
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-lavender disabled:opacity-60"
             />
             <button
-              onClick={handleSendMessage}
-              disabled={!inputMessage.trim() || isTyping}
+              onClick={reachedLimit ? onSubscribe : handleSendMessage}
+              disabled={(reachedLimit && false) || !inputMessage.trim() || isTyping}
               className="px-6 py-3 bg-gradient-to-r from-lavender to-sky-blue text-white rounded-xl hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Send
+              {reachedLimit ? "Subscribe" : "Send"}
             </button>
           </div>
         </div>

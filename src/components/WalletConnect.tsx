@@ -2,7 +2,7 @@ import React from "react";
 import { enableWallet, getWalletInfo, WalletAPI } from "../services/cardano";
 
 export default function WalletConnect(props: {
-  onConnected: (api: WalletAPI, info: any) => void;
+  onConnected: (api: WalletAPI, info: any, walletName?: string) => void;
 }) {
   const [api, setApi] = React.useState<WalletAPI | null>(null);
   const [info, setInfo] = React.useState<any>(null);
@@ -21,6 +21,7 @@ export default function WalletConnect(props: {
 
       // Try multiple times with different approaches
       let w = null;
+      let walletName = "";
       let attempts = 0;
       const maxAttempts = 3;
 
@@ -32,6 +33,15 @@ export default function WalletConnect(props: {
           w = await enableWallet();
           if (w) {
             console.log("Wallet enabled successfully");
+            // Detect which wallet was used
+            const anyWin = window as any;
+            const wallets = ["eternl", "nami", "lace"];
+            for (const wallet of wallets) {
+              if (anyWin.cardano?.[wallet]?.isEnabled && anyWin.cardano[wallet].isEnabled()) {
+                walletName = wallet.charAt(0).toUpperCase() + wallet.slice(1);
+                break;
+              }
+            }
             break;
           }
         } catch (error) {
@@ -66,7 +76,7 @@ export default function WalletConnect(props: {
       console.log("Wallet connection successful, calling onConnected...");
       console.log("🔍 Calling onConnected with wallet info:", i);
       // Call the parent callback immediately to trigger redirect
-      props.onConnected(w, i);
+      props.onConnected(w, i, walletName);
     } catch (e: any) {
       console.error("Wallet connection error:", e);
       setError(e?.message || "Wallet connect failed. Please try again.");

@@ -1,0 +1,5 @@
+{
+  "type": "PlutusScriptV2",
+  "description": "First Journal NFT Minting Policy",
+  "cborHex": "5820b630c36464862d8e0c75f1e629fdb5022a45af93a7cb3c2b81994655ea564fb0"
+}

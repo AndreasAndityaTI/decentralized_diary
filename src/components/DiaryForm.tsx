@@ -8,6 +8,13 @@ export type DiaryEntry = {
   createdAt: string;
   mood?: string;
   walletAddress?: string;
+  walletUsername?: string;
+  location?: string;
+  hideWalletAddress?: boolean;
+  hideWalletUsername?: boolean;
+  overrideMood?: string;
+  secretHistory?: string;
+  isPublic?: boolean;
 };
 
 const moodEmojis = {
@@ -29,16 +36,52 @@ const moodEmojis = {
 
 export default function DiaryForm(props: {
   onPublished: (entry: DiaryEntry, ipfsCid: string) => void;
+  onUpdated?: (entry: DiaryEntry, oldCid: string, newCid: string) => void;
   walletAddress?: string;
+  walletUsername?: string;
+  walletApi?: any;
+  existingEntries?: Array<{ entry: DiaryEntry; cid: string }>;
+  entryToEdit?: { entry: DiaryEntry; cid: string };
 }) {
-  const [title, setTitle] = React.useState("");
-  const [content, setContent] = React.useState("");
-  const [mood, setMood] = React.useState<string | null>(null);
+  const isEditing = !!props.entryToEdit;
+  const [title, setTitle] = React.useState(props.entryToEdit?.entry.title || "");
+  const [content, setContent] = React.useState(props.entryToEdit?.entry.content || "");
+  const [mood, setMood] = React.useState<string | null>(props.entryToEdit?.entry.mood || null);
+  const [overrideMood, setOverrideMood] = React.useState<string>(props.entryToEdit?.entry.overrideMood || "");
+  const [location, setLocation] = React.useState(props.entryToEdit?.entry.location || "");
+  const [hideWalletAddress, setHideWalletAddress] = React.useState(props.entryToEdit?.entry.hideWalletAddress || false);
+  const [hideWalletUsername, setHideWalletUsername] = React.useState(props.entryToEdit?.entry.hideWalletUsername || false);
+  const [isPublic, setIsPublic] = React.useState(props.entryToEdit?.entry.isPublic || false);
+  const [countries, setCountries] = React.useState<Array<{ name: string; code: string }>>([]);
+  const [loadingCountries, setLoadingCountries] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [analyzing, setAnalyzing] = React.useState(false);
   const [error, setError] = React.useState("");
   const [recommendations, setRecommendations] = React.useState<any[]>([]);
   const [showRecommendations, setShowRecommendations] = React.useState(false);
+
+  // Load countries on component mount
+  React.useEffect(() => {
+    const loadCountries = async () => {
+      try {
+        setLoadingCountries(true);
+        const response = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2');
+        const data = await response.json();
+        const countryList = data
+          .map((country: any) => ({
+            name: country.name.common,
+            code: country.cca2
+          }))
+          .sort((a: any, b: any) => a.name.localeCompare(b.name));
+        setCountries(countryList);
+      } catch (err) {
+        console.error('Failed to load countries:', err);
+      } finally {
+        setLoadingCountries(false);
+      }
+    };
+    loadCountries();
+  }, []);
 
   const analyze = async () => {
     try {
@@ -55,6 +98,24 @@ export default function DiaryForm(props: {
     } finally {
       setAnalyzing(false);
     }
+  };
+
+  const generateSecretHistory = (): string => {
+    if (!props.existingEntries || props.existingEntries.length === 0) {
+      return "";
+    }
+
+    // Create a chronological history of all previous entries
+    const historyEntries = props.existingEntries
+      .sort((a, b) => new Date(a.entry.createdAt).getTime() - new Date(b.entry.createdAt).getTime())
+      .map(({ entry }) => ({
+        date: new Date(entry.createdAt).toLocaleDateString(),
+        title: entry.title,
+        mood: entry.mood,
+        summary: entry.content.substring(0, 100) + (entry.content.length > 100 ? "..." : "")
+      }));
+
+    return JSON.stringify(historyEntries);
   };
 
   const generateRecommendations = (
@@ -304,16 +365,28 @@ export default function DiaryForm(props: {
     setShowRecommendations(true);
   };
 
-  const publish = async () => {
+  const handleSubmit = async () => {
     try {
       setError("");
       setLoading(true);
+
+      // Generate secret history from existing entries
+      const secretHistory = generateSecretHistory();
+
+
       const entry: DiaryEntry = {
         title,
         content,
         createdAt: new Date().toISOString(),
-        mood: mood || undefined,
-        walletAddress: props.walletAddress,
+        mood: overrideMood || mood || undefined,
+        walletAddress: hideWalletAddress ? undefined : props.walletAddress,
+        walletUsername: hideWalletUsername ? undefined : props.walletUsername,
+        location: location || undefined,
+        hideWalletAddress,
+        hideWalletUsername,
+        overrideMood: overrideMood || undefined,
+        secretHistory,
+        isPublic,
       };
 
       // Extract metadata for Pinata
@@ -328,7 +401,13 @@ export default function DiaryForm(props: {
         url: ipfs.url,
       });
 
-      props.onPublished(entry, ipfs.cid);
+      if (isEditing && props.onUpdated && props.entryToEdit) {
+        props.onUpdated(entry, props.entryToEdit.cid, ipfs.cid);
+        alert("✅ Your story has been updated successfully!");
+      } else {
+        props.onPublished(entry, ipfs.cid);
+        alert("✅ Your story has been saved successfully!");
+      }
     } catch (e: any) {
       setError(
         e?.message ||
@@ -340,11 +419,24 @@ export default function DiaryForm(props: {
   };
 
   return (
-    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200 space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-2xl font-bold text-gray-800">
-          Write Today's Story
-        </h3>
+    <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 md:p-6 shadow-lg border border-gray-200 space-y-4 md:space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+        <div>
+          <h3 className="text-xl md:text-2xl font-bold text-gray-800">
+            {isEditing ? "Edit Your Story" : "Good Morning!"}
+          </h3>
+          <p className="text-gray-600 mt-1">
+            {isEditing ? "Update your journal entry" : "How are you feeling today?"}
+          </p>
+          <p className="text-sm text-gray-500 mt-1">
+            {isEditing ? "Make changes to your story" : "Ready to write today's story?"}
+          </p>
+          {props.walletAddress && (
+            <div className="mt-2 text-xs text-gray-500">
+              📱 Source: {props.walletAddress.slice(0, 10)}...{props.walletAddress.slice(-6)}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -357,18 +449,139 @@ export default function DiaryForm(props: {
 
         <textarea
           className="w-full border border-gray-300 bg-white text-gray-800 placeholder-gray-500 rounded-xl p-4 min-h-[200px] focus:outline-none focus:ring-2 focus:ring-lavender resize-none text-lg leading-relaxed"
-          placeholder="How are you feeling today? What happened? What are you grateful for? Share your thoughts freely..."
+          placeholder="Start your journal entry and let AI analyze your mood"
           value={content}
           onChange={(e) => setContent(e.target.value)}
         />
+
+        {/* Location Input */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700">
+            📍 Location (optional)
+          </label>
+          <select
+            className="w-full border border-gray-300 bg-white text-gray-800 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-lavender"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            disabled={loadingCountries}
+          >
+            <option value="">Select your country...</option>
+            {countries.map((country) => (
+              <option key={country.code} value={country.name}>
+                {country.name}
+              </option>
+            ))}
+          </select>
+          {loadingCountries && (
+            <p className="text-sm text-gray-500">Loading countries...</p>
+          )}
+        </div>
+
+        {/* Wallet Address Visibility Option */}
+        {props.walletAddress && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">
+              🔒 Wallet Address Visibility
+            </label>
+            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
+              <input
+                type="checkbox"
+                id="hideWalletAddress"
+                checked={hideWalletAddress}
+                onChange={(e) => setHideWalletAddress(e.target.checked)}
+                className="w-4 h-4 text-lavender bg-gray-100 border-gray-300 rounded focus:ring-lavender focus:ring-2"
+              />
+              <label htmlFor="hideWalletAddress" className="text-sm text-gray-700">
+                Hide wallet address from journal entry (address will still be used for data organization)
+              </label>
+            </div>
+            <p className="text-xs text-gray-500">
+              Your wallet address helps organize your entries and enables NFT minting features.
+            </p>
+          </div>
+        )}
+
+        {/* Wallet Username Visibility Option */}
+        {props.walletUsername && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">
+              🔒 Wallet Username Visibility
+            </label>
+            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
+              <input
+                type="checkbox"
+                id="hideWalletUsername"
+                checked={hideWalletUsername}
+                onChange={(e) => setHideWalletUsername(e.target.checked)}
+                className="w-4 h-4 text-lavender bg-gray-100 border-gray-300 rounded focus:ring-lavender focus:ring-2"
+              />
+              <label htmlFor="hideWalletUsername" className="text-sm text-gray-700">
+                Hide wallet username from journal entry
+              </label>
+            </div>
+            <p className="text-xs text-gray-500">
+              Your wallet username identifies your wallet provider.
+            </p>
+          </div>
+        )}
+
+        {/* Publicity Option */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700">
+            🌐 Public Sharing
+          </label>
+          <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
+            <input
+              type="checkbox"
+              id="isPublic"
+              checked={isPublic}
+              onChange={(e) => setIsPublic(e.target.checked)}
+              className="w-4 h-4 text-lavender bg-gray-100 border-gray-300 rounded focus:ring-lavender focus:ring-2"
+            />
+            <label htmlFor="isPublic" className="text-sm text-gray-700">
+              Share this journal entry publicly
+            </label>
+          </div>
+          <p className="text-xs text-gray-500">
+            Public entries will be visible to other users in the Public Journals section.
+          </p>
+        </div>
+
+
+        {/* Override AI Mood Analysis */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700">
+            Override AI mood analysis
+          </label>
+          <select
+            className="w-full border border-gray-300 bg-white text-gray-800 rounded-xl p-4 focus:outline-none focus:ring-2 focus:ring-lavender"
+            value={overrideMood}
+            onChange={(e) => setOverrideMood(e.target.value)}
+          >
+            <option value="">Use AI analysis</option>
+            <option value="happy">😊 Happy</option>
+            <option value="sad">😢 Sad</option>
+            <option value="angry">😠 Angry</option>
+            <option value="neutral">😐 Neutral</option>
+            <option value="anxious">😰 Anxious</option>
+            <option value="motivated">💪 Motivated</option>
+            <option value="calm">😌 Calm</option>
+            <option value="excited">🤩 Excited</option>
+            <option value="frustrated">😤 Frustrated</option>
+            <option value="grateful">🙏 Grateful</option>
+          </select>
+          <p className="text-xs text-gray-500">
+            Override the AI's mood analysis with your own feeling
+          </p>
+        </div>
       </div>
 
       {/* Mood Analysis */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
         <button
           onClick={analyze}
           disabled={analyzing || !content.trim()}
-          className="px-6 py-3 rounded-xl bg-gradient-to-r from-mint-green to-soft-yellow text-gray-800 hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          className="px-4 md:px-6 py-3 rounded-xl bg-gradient-to-r from-mint-green to-soft-yellow text-gray-800 hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm md:text-base"
         >
           {analyzing
             ? "Understanding your feelings..."
@@ -376,7 +589,7 @@ export default function DiaryForm(props: {
         </button>
 
         {mood && (
-          <div className="flex items-center space-x-3 bg-gradient-to-r from-lavender/20 to-sky-blue/20 rounded-xl p-3">
+          <div className="flex items-center space-x-3 bg-gradient-to-r from-lavender/20 to-sky-blue/20 rounded-xl p-3 self-center md:self-auto">
             <span className="text-2xl">
               {moodEmojis[mood as keyof typeof moodEmojis] || "😊"}
             </span>
@@ -389,13 +602,13 @@ export default function DiaryForm(props: {
         )}
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-center md:justify-end">
         <button
-          onClick={publish}
+          onClick={handleSubmit}
           disabled={loading || analyzing || !title.trim() || !content.trim()}
-          className="px-8 py-3 rounded-xl bg-gradient-to-r from-lavender to-sky-blue text-white hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-lg"
+          className="w-full md:w-auto px-6 md:px-8 py-3 rounded-xl bg-gradient-to-r from-lavender to-sky-blue text-white hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-base md:text-lg"
         >
-          {loading ? "Saving your story..." : "📖 Save My Story"}
+          {loading ? (isEditing ? "Updating your story..." : "Saving your story...") : (isEditing ? "📝 Update My Story" : "📖 Save My Story")}
         </button>
       </div>
 
