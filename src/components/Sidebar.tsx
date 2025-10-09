@@ -9,6 +9,7 @@ const menuItems = [
   { id: "dashboard", label: "Home", icon: "🏠" },
   { id: "journal", label: "Journal", icon: "📝" },
   { id: "trends", label: "Mood Trends", icon: "📊" },
+  { id: "moodmap", label: "Global Mood Map", icon: "🌍" },
   { id: "ai-companion", label: "AI Companion", icon: "🤖" },
   { id: "profile", label: "Profile", icon: "👤" },
 ];

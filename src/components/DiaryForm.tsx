@@ -425,8 +425,10 @@ export default function DiaryForm(props: {
 
       if (isEditing && props.onUpdated && props.entryToEdit) {
         props.onUpdated(entry, props.entryToEdit.cid, ipfs.cid);
+        alert("✅ Your story has been updated successfully!");
       } else {
         props.onPublished(entry, ipfs.cid);
+        alert("✅ Your story has been saved successfully!");
       }
     } catch (e: any) {
       setError(

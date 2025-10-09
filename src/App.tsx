@@ -220,6 +220,8 @@ export default function App() {
         );
       case "trends":
         return <MoodTrends entries={entries} />;
+      case "moodmap":
+        return <MoodMap entries={entries} />;
       case "ai-companion":
         return <AICompanion walletApi={walletApi} walletAddress={walletAddress} />;
       case "dao":
