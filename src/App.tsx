@@ -25,6 +25,9 @@ export default function App() {
   const [entries, setEntries] = React.useState<
     Array<{ entry: DiaryEntry; cid: string }>
   >([]);
+  const [publicEntries, setPublicEntries] = React.useState<
+    Array<{ entry: DiaryEntry; cid: string }>
+  >([]);
   const [loadingEntries, setLoadingEntries] = React.useState(false);
   const [editingEntry, setEditingEntry] = React.useState<{ entry: DiaryEntry; cid: string } | null>(null);
 
@@ -93,7 +96,26 @@ export default function App() {
     };
 
     loadEntries();
+    loadPublicEntries();
   }, [walletAddress, connected]);
+
+  // Load public entries from IPFS
+  const loadPublicEntries = async () => {
+    if (!connected) return;
+
+    try {
+      const { fetchAllDiaryEntriesFromPinata } = await ipfsService;
+      const allEntries = await fetchAllDiaryEntriesFromPinata();
+
+      // Filter for public entries only
+      const publicOnly = allEntries.filter(({ entry }) => entry.isPublic === true);
+      setPublicEntries(publicOnly);
+      console.log(`✅ Loaded ${publicOnly.length} public entries from IPFS`);
+    } catch (error) {
+      console.error("❌ Failed to load public entries:", error);
+      // Don't show error to user, just log it
+    }
+  };
 
   const handlePublish = async (entry: DiaryEntry, cid: string) => {
     setLastCid(cid);
@@ -262,7 +284,7 @@ export default function App() {
       case "public-journals":
         return <PublicJournals walletAddress={walletAddress} />;
       case "trends":
-        return <MoodTrends entries={entries} />;
+        return <MoodTrends entries={entries} publicEntries={publicEntries} />;
       case "moodmap":
         return <MoodMap entries={entries} />;
       case "ai-companion":
