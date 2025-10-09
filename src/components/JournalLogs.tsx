@@ -9,6 +9,7 @@ interface JournalLogsProps {
   walletAddress?: string;
   onEdit?: (entry: DiaryEntry, cid: string) => void;
   onDelete?: (cid: string) => void;
+  onTogglePublic?: (cid: string, isPublic: boolean) => void;
 }
 
 const moodEmojis = {
@@ -53,6 +54,7 @@ export default function JournalLogs({
   walletAddress,
   onEdit,
   onDelete,
+  onTogglePublic,
 }: JournalLogsProps) {
   const [selectedEntry, setSelectedEntry] = useState<{
     entry: DiaryEntry;
@@ -164,6 +166,22 @@ export default function JournalLogs({
                         </div>
                         {isAuthor(entry) && (
                           <div className="flex space-x-1">
+                            {onTogglePublic && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onTogglePublic(cid, !entry.isPublic);
+                                }}
+                                className={`text-xs px-2 py-1 rounded ${
+                                  entry.isPublic
+                                    ? "bg-green-100 text-green-600 hover:bg-green-200"
+                                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                }`}
+                                title={entry.isPublic ? "Make private" : "Make public"}
+                              >
+                                {entry.isPublic ? "🌐 Public" : "🔒 Private"}
+                              </button>
+                            )}
                             {onEdit && (
                               <button
                                 onClick={(e) => {
@@ -219,6 +237,11 @@ export default function JournalLogs({
                       {entry.walletUsername && !entry.hideWalletUsername && (
                         <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-600">
                           👤 {entry.walletUsername}
+                        </span>
+                      )}
+                      {entry.isPublic && (
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-600">
+                          🌐 Public
                         </span>
                       )}
                     </div>

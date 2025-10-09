@@ -14,6 +14,7 @@ export type DiaryEntry = {
   hideWalletUsername?: boolean;
   overrideMood?: string;
   secretHistory?: string;
+  isPublic?: boolean;
 };
 
 const moodEmojis = {
@@ -50,6 +51,7 @@ export default function DiaryForm(props: {
   const [location, setLocation] = React.useState(props.entryToEdit?.entry.location || "");
   const [hideWalletAddress, setHideWalletAddress] = React.useState(props.entryToEdit?.entry.hideWalletAddress || false);
   const [hideWalletUsername, setHideWalletUsername] = React.useState(props.entryToEdit?.entry.hideWalletUsername || false);
+  const [isPublic, setIsPublic] = React.useState(props.entryToEdit?.entry.isPublic || false);
   const [countries, setCountries] = React.useState<Array<{ name: string; code: string }>>([]);
   const [loadingCountries, setLoadingCountries] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
@@ -384,6 +386,7 @@ export default function DiaryForm(props: {
         hideWalletUsername,
         overrideMood: overrideMood || undefined,
         secretHistory,
+        isPublic,
       };
 
       // Extract metadata for Pinata
@@ -521,6 +524,28 @@ export default function DiaryForm(props: {
             </p>
           </div>
         )}
+
+        {/* Publicity Option */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700">
+            🌐 Public Sharing
+          </label>
+          <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
+            <input
+              type="checkbox"
+              id="isPublic"
+              checked={isPublic}
+              onChange={(e) => setIsPublic(e.target.checked)}
+              className="w-4 h-4 text-lavender bg-gray-100 border-gray-300 rounded focus:ring-lavender focus:ring-2"
+            />
+            <label htmlFor="isPublic" className="text-sm text-gray-700">
+              Share this journal entry publicly
+            </label>
+          </div>
+          <p className="text-xs text-gray-500">
+            Public entries will be visible to other users in the Public Journals section.
+          </p>
+        </div>
 
 
         {/* Override AI Mood Analysis */}

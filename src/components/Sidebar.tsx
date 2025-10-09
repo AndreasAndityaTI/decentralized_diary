@@ -8,6 +8,7 @@ interface SidebarProps {
 const menuItems = [
   { id: "dashboard", label: "Home", icon: "🏠" },
   { id: "journal", label: "Journal", icon: "📝" },
+  { id: "public-journals", label: "Public Journals", icon: "🌐" },
   { id: "trends", label: "Mood Trends", icon: "📊" },
   { id: "moodmap", label: "Mood Map", icon: "🌍" },
   { id: "ai-companion", label: "AI Companion", icon: "🤖" },

@@ -3,6 +3,7 @@ import Landing from "./components/Landing";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./components/Dashboard";
 import JournalLogs from "./components/JournalLogs";
+import PublicJournals from "./components/PublicJournals";
 import MoodTrends from "./components/MoodTrends";
 import MoodMap from "./components/MoodMap";
 import AICompanion from "./components/AICompanion";
@@ -189,6 +190,45 @@ export default function App() {
     }
   };
 
+  // Function to toggle publicity of an entry
+  const handleTogglePublic = async (cid: string, isPublic: boolean) => {
+    try {
+      // Find the entry in state
+      const entryItem = entries.find(item => item.cid === cid);
+      if (!entryItem) return;
+
+      // Update the entry with new publicity status
+      const updatedEntry: DiaryEntry = {
+        ...entryItem.entry,
+        isPublic,
+      };
+
+      // Re-upload to IPFS with updated metadata
+      const { extractDiaryMetadata, uploadJsonToIpfs } = await ipfsService;
+      const metadata = extractDiaryMetadata(updatedEntry, walletAddress);
+      const ipfsResult = await uploadJsonToIpfs(updatedEntry, metadata);
+
+      // Update local storage with new CID
+      const { removeCid, addCid } = await entriesService;
+      removeCid(cid);
+      addCid(ipfsResult.cid);
+
+      // Update state
+      setEntries(prev =>
+        prev.map(item =>
+          item.cid === cid
+            ? { entry: updatedEntry, cid: ipfsResult.cid }
+            : item
+        )
+      );
+
+      console.log(`Entry publicity ${isPublic ? 'enabled' : 'disabled'} successfully`);
+    } catch (error) {
+      console.error("Failed to toggle entry publicity:", error);
+      alert("Failed to update entry publicity. Please try again.");
+    }
+  };
+
   const renderPage = () => {
     switch (currentPage) {
       case "dashboard":
@@ -216,8 +256,11 @@ export default function App() {
             walletAddress={walletAddress}
             onEdit={handleEditEntry}
             onDelete={handleDeleteEntry}
+            onTogglePublic={handleTogglePublic}
           />
         );
+      case "public-journals":
+        return <PublicJournals walletAddress={walletAddress} />;
       case "trends":
         return <MoodTrends entries={entries} />;
       case "moodmap":
