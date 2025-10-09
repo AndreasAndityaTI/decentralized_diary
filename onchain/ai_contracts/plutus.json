@@ -1,0 +1,71 @@
+{
+  "preamble": {
+    "title": "andreasanditya/decentralized_diary",
+    "version": "0.1.0",
+    "plutusVersion": "v3",
+    "compiler": {
+      "name": "Aiken",
+      "version": "v1.1.7+e2fb28b"
+    },
+    "license": "MIT"
+  },
+  "validators": [
+    {
+      "title": "ai_access.ai_access.spend",
+      "datum": {
+        "title": "datum",
+        "schema": {
+          "$ref": "#/definitions/ai_access~1Datum"
+        }
+      },
+      "redeemer": {
+        "title": "redeemer",
+        "schema": {
+          "$ref": "#/definitions/ai_access~1Redeemer"
+        }
+      },
+      "compiledCode": "58d701010032323232323225333002323232323253330073370e900118041baa0011323322533300a3370e900018059baa0051533300d300c375400a2a66601466e1d2002300b375400229404cc88c8cc00400400c894ccc04400452809991299980819b8f00200514a22660080080026eb8c048004c04c004dd618071807980798079807980798079807980798061baa006375c601c60186ea8c038c030dd50008b0b18060009806180680098049baa00116300a300b0033009002300800230080013004375400229309b2b2b9a5573aaae7955cfaba15745",
+      "hash": "b956c0dad46fc90c671a4d2ad4aad25841b32eefbace8d21e789eb42"
+    },
+    {
+      "title": "ai_access.ai_access.else",
+      "redeemer": {
+        "schema": {}
+      },
+      "compiledCode": "58d701010032323232323225333002323232323253330073370e900118041baa0011323322533300a3370e900018059baa0051533300d300c375400a2a66601466e1d2002300b375400229404cc88c8cc00400400c894ccc04400452809991299980819b8f00200514a22660080080026eb8c048004c04c004dd618071807980798079807980798079807980798061baa006375c601c60186ea8c038c030dd50008b0b18060009806180680098049baa00116300a300b0033009002300800230080013004375400229309b2b2b9a5573aaae7955cfaba15745",
+      "hash": "b956c0dad46fc90c671a4d2ad4aad25841b32eefbace8d21e789eb42"
+    }
+  ],
+  "definitions": {
+    "ByteArray": {
+      "dataType": "bytes"
+    },
+    "ai_access/Datum": {
+      "title": "Datum",
+      "anyOf": [
+        {
+          "title": "Datum",
+          "dataType": "constructor",
+          "index": 0,
+          "fields": [
+            {
+              "title": "owner",
+              "$ref": "#/definitions/ByteArray"
+            }
+          ]
+        }
+      ]
+    },
+    "ai_access/Redeemer": {
+      "title": "Redeemer",
+      "anyOf": [
+        {
+          "title": "Access",
+          "dataType": "constructor",
+          "index": 0,
+          "fields": []
+        }
+      ]
+    }
+  }
+}
