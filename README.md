@@ -4,7 +4,7 @@
 ## Links
 - Web App : https://e73ce2e7-abca-47c9-97c0-c1fbe272b510-00-1p6wqe3m69h3x.pike.replit.dev
 - HackQuest : https://www.hackquest.io/projects/Cardano-DeDiary
-- Slide Deck: DeDiary App
+- Slide Deck: https://www.canva.com/design/DAG1Zg0byUQ/mmDj9JP-7BolGdF5-2P72w/view?utm_content=DAG1Zg0byUQ&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=hd9db0d1940
 
 
 A web-based diary that:
