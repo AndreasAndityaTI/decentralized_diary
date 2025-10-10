@@ -151,7 +151,6 @@ This project now includes a **deployed native script smart contract** for NFT mi
 
 ### Deployment Link
 View the deployed contract on CardanoScan:
-**[https://preprod.cardanoscan.io/tokenPolicy/b402a071c9ec56729897dc08b56b3dee9ccf95e932c7f8d271c4ffd7](https://preprod.cardanoscan.io/tokenPolicy/b402a071c9ec56729897dc08b56b3dee9ccf95e932c7f8d271c4ffd7)**
 
 Minting Token Policy :
 - https://preprod.cardanoscan.io/tokenPolicy/b402a071c9ec56729897dc08b56b3dee9ccf95e932c7f8d271c4ffd7
