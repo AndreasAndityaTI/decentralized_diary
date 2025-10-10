@@ -23,11 +23,6 @@ A web-based diary that:
 - IPFS via pinning provider HTTP API
 - AI Model (e.g., Phi3 from Ollama)
 
-## Minting Token Policy  
-- https://preprod.cardanoscan.io/tokenPolicy/b402a071c9ec56729897dc08b56b3dee9ccf95e932c7f8d271c4ffd7
-  
-## Smart Contract (ai_access) 
-- https://preprod.cardanoscan.io/address/70aa999ff3c1c45b9a74af03beb3106908625e675c548a38930fc8fc79
 
 ## Setup
 
@@ -157,6 +152,12 @@ This project now includes a **deployed native script smart contract** for NFT mi
 ### Deployment Link
 View the deployed contract on CardanoScan:
 **[https://preprod.cardanoscan.io/tokenPolicy/b402a071c9ec56729897dc08b56b3dee9ccf95e932c7f8d271c4ffd7](https://preprod.cardanoscan.io/tokenPolicy/b402a071c9ec56729897dc08b56b3dee9ccf95e932c7f8d271c4ffd7)**
+
+Minting Token Policy :
+- https://preprod.cardanoscan.io/tokenPolicy/b402a071c9ec56729897dc08b56b3dee9ccf95e932c7f8d271c4ffd7
+  
+Smart Contract (ai_access) :
+- https://preprod.cardanoscan.io/address/70aa999ff3c1c45b9a74af03beb3106908625e675c548a38930fc8fc79
 
 ### How It Works
 - **On-Chain Validation**: Every NFT minting transaction is validated by the smart contract
